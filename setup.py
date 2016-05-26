@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='barin',
-    version='0.0',
+    version='0.0.4',
     description='Barin, yet another MongoDB schema validation layer',
     long_description='Some restructured text maybe',
     classifiers=[

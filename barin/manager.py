@@ -6,7 +6,7 @@ class Manager(object):
 
     def __init__(self, cname, schema=S.Missing, db=None):
         self._cname = cname
-        self._schema = S.compile(schema)
+        self._schema = S.compile_schema(schema)
         self._db = db
         self._all_managers.append(self)
 
