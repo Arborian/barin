@@ -212,3 +212,66 @@ class TestUnicode(TestCase):
         with self.assertRaises(S.Invalid):
             s.to_py('5')
 
+
+class TestDocument(TestCase):
+
+    def test_doc_ok(self):
+        s = S.Document(fields=dict(x=S.Integer()))
+        val = {'x': 5}
+        res = s.to_py(val)
+        self.assertEqual(res, val)
+
+    def test_doc_notdoc_fail(self):
+        s = S.Document(fields=dict(x=S.Integer()))
+        val = 5
+        with self.assertRaises(S.Invalid):
+            s.to_py(val)
+
+    def test_doc_missing_fail(self):
+        s = S.Document(fields=dict(x=S.Integer()))
+        val = {}
+        with self.assertRaises(S.Invalid) as err:
+            s.to_py(val)
+        self.assertIsInstance(err.exception.document['x'], S.Invalid)
+
+    def test_doc_missing_default(self):
+        s = S.Document(fields=dict(x=S.Integer(default=None)))
+        val = {}
+        res = s.to_py(val)
+        self.assertEqual(res, {'x': None})
+
+    def test_doc_partial(self):
+        s = S.Document(fields=dict(x=S.Integer(), y=S.Integer()))
+        val = {'x': 1, 'y': 'foo'}
+        with self.assertRaises(S.Invalid) as err:
+            s.to_py(val)
+        self.assertEqual(err.exception.document.keys(), ['y'])
+
+
+class TestArray(TestCase):
+
+    def test_arr_ok(self):
+        s = S.Array(validator=S.Integer())
+        val = [5]
+        res = s.to_py(val)
+        self.assertEqual(res, val)
+
+    def test_arr_notarr_fail(self):
+        s = S.Array(validator=S.Integer())
+        val = '5'
+        with self.assertRaises(S.Invalid):
+            s.to_py(val)
+
+    def test_arr_partial(self):
+        s = S.Array(validator=S.Integer())
+        val = [1, 2, 3, 'foo']
+        with self.assertRaises(S.Invalid) as err:
+            s.to_py(val)
+        self.assertEqual(len(err.exception.array), len(val))
+        self.assertEqual(err.exception.array[:3], [None] * 3)
+
+    def test_arr_only_begin(self):
+        s = S.Array(validator=S.Integer(), only_validate=slice(None, 2))
+        val = [1, 2, 3, 'foo']
+        res = s.to_py(val)
+        self.assertEqual(val, res)

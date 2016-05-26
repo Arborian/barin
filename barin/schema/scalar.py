@@ -8,33 +8,7 @@ from .base import Schema, Invalid
 
 
 class Scalar(Schema):
-    _msgs = dict(
-        none='Value cannot be None')
-
-    def __init__(self, allow_none=False, **kwargs):
-        super(Scalar, self).__init__(**kwargs)
-        self.allow_none = allow_none
-
-    def to_py(self, value):
-        res = super(Scalar, self).to_py(value)
-        if res is None:
-            if self.allow_none:
-                return res
-            else:
-                raise Invalid(self._msgs['none'], value)
-        return self._validate(res)
-
-    def to_db(self, value):
-        res = super(Scalar, self).to_py(value)
-        if res is None:
-            if self.allow_none:
-                return res
-            else:
-                raise Invalid(self._msgs['none'], value)
-        return self._validate(res)
-
-    def _validate(self, value):
-        return value
+    _msgs = dict(Schema._msgs)
 
 
 class ObjectId(Scalar):
@@ -42,7 +16,7 @@ class ObjectId(Scalar):
         Scalar._msgs,
         not_oid='Value must be an ObjectId')
 
-    def _validate(self, value):
+    def _validate(self, value, state=None):
         if not isinstance(value, bson.ObjectId):
             raise Invalid(self._msgs['not_oid'], value)
         return value
@@ -53,7 +27,7 @@ class Number(Scalar):
         Scalar._msgs,
         not_num='Value must be an number')
 
-    def _validate(self, value):
+    def _validate(self, value, state=None):
         if not isinstance(value, (int, long, float)):
             raise Invalid(self._msgs['not_num'], value)
         return value
@@ -64,8 +38,8 @@ class Integer(Number):
         Number._msgs,
         not_int='Value must be an integer')
 
-    def _validate(self, value):
-        value = super(Integer, self)._validate(value)
+    def _validate(self, value, state=None):
+        value = super(Integer, self)._validate(value, state)
         if not isinstance(value, (int, long)):
             raise Invalid(self._msgs['not_int'], value)
         return value
@@ -76,8 +50,8 @@ class Float(Number):
         Number._msgs,
         not_float='Value must be a floating-point number')
 
-    def _validate(self, value):
-        value = super(Float, self)._validate(value)
+    def _validate(self, value, state=None):
+        value = super(Float, self)._validate(value, state)
         return float(value)
 
 
@@ -86,7 +60,7 @@ class Unicode(Scalar):
         Scalar._msgs,
         not_unicode='Value must be a Unicode string')
 
-    def _validate(self, value):
+    def _validate(self, value, state=None):
         if not isinstance(value, unicode):
             raise Invalid(self._msgs['not_unicode'], value)
         return value
@@ -101,10 +75,9 @@ class DateTime(Scalar):
         super(DateTime, self).__init__(**kwargs)
         self.default_timezone = default_timezone
 
-    def to_py(self, value):
+    def to_py(self, value, state=None):
         """Store only naive (assume UTC) datetimes."""
-        res = super(DateTime, self).to_py(value)
-        res = self._validate(res)
+        res = super(DateTime, self).to_py(value, state)
         if isinstance(res, datetime):
             tz = self._get_default_timezone()
             if tz is not None:
@@ -112,16 +85,15 @@ class DateTime(Scalar):
                 res = res.astimezone(tz)
         return res
 
-    def to_db(self, value):
+    def to_db(self, value, state=None):
         """Convert to a default datetime on egress from the DB."""
-        res = super(DateTime, self).to_py(value)
-        res = self._validate(res)
+        res = super(DateTime, self).to_db(value, state)
         if isinstance(res, datetime) and res.tzinfo:
             res = res.astimezone(pytz.utc)
             res = res.replace(tzinfo=None)
         return res
 
-    def _validate(self, value):
+    def _validate(self, value, state=None):
         if value is None and self.allow_none:
             return value
         if not isinstance(value, datetime):
