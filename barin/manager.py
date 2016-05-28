@@ -2,7 +2,6 @@ from . import schema as S
 
 
 class Manager(object):
-    _all_managers = []
 
     def __init__(self, cname, schema=S.Missing, db=None):
         self._cname = cname
@@ -11,16 +10,10 @@ class Manager(object):
         else:
             self._schema = S.compile_schema(schema)
         self._db = db
-        self._all_managers.append(self)
 
     @property
     def collection(self):
         return getattr(self._db, self._cname)
-
-    @classmethod
-    def bind_all(cls, db):
-        for m in cls._all_managers:
-            m.bind(db)
 
     def bind(self, db):
         self._db = db

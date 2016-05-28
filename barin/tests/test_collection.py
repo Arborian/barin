@@ -3,9 +3,23 @@ from unittest import TestCase
 from mock import Mock
 
 from barin.collection import collection, Metadata, Field, Index
+from barin import schema as S
 
 
-class TestManager(TestCase):
+class TestField(TestCase):
+
+    def test_field_schema(self):
+        fld = Field('x', int)
+        self.assertIsInstance(fld.schema, S.Integer)
+        self.assertEqual(fld.schema.required, True)
+        self.assertEqual(fld.schema.default, S.Missing)
+
+    def test_field_schema_options(self):
+        fld = Field('x', int, default=0)
+        self.assertEqual(fld.schema.default, 0)
+
+
+class TestCollection(TestCase):
 
     def setUp(self):
         self.db = Mock()

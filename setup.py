@@ -2,7 +2,8 @@ from setuptools import setup, find_packages
 
 setup(
     name='barin',
-    version='0.0.4',
+    version_format='{tag}.dev{commitcount}+{gitsha}',
+    setup_requires=['setuptools-git-version'],
     description='Barin, yet another MongoDB schema validation layer',
     long_description='Some restructured text maybe',
     classifiers=[

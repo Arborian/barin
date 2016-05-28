@@ -1,4 +1,5 @@
 from . import manager
+from . import schema as S
 
 
 class Metadata(object):
@@ -63,7 +64,7 @@ class Field(object):
 
     def __init__(self, name, schema, **options):
         self.name = name
-        self.schema = schema
+        self.schema = S.compile_schema(schema, **options)
         self.options = options
 
     def __get__(self, obj, cls=None):
