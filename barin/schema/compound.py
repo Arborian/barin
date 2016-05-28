@@ -1,10 +1,10 @@
 """Schemas for compound types (Documents and Arrays)."""
-from .base import Schema, Invalid, Missing
+from .base import Validator, Invalid, Missing
 
 
-class Document(Schema):
+class Document(Validator):
     _msgs = dict(
-        Schema._msgs,
+        Validator._msgs,
         not_doc='Value must be a document',
         extra='Field has no validator')
 
@@ -23,14 +23,6 @@ class Document(Schema):
         self.allow_extra = allow_extra
         self.extra_validator = extra_validator
 
-    def to_py(self, value, state=None):
-        state = 'to_py'
-        return self._validate(value, state)
-
-    def to_db(self, value, state=None):
-        state = 'to_db'
-        return self._validate(value, state)
-
     def _validate(self, value, state=None):
         if not isinstance(value, dict):
             raise Invalid(self._msgs['not_doc'], value)
@@ -41,8 +33,7 @@ class Document(Schema):
         for name, validator in self.fields.items():
             r_val = value.get(name, Missing)
             try:
-                subval = getattr(validator, state)
-                v_val = subval(r_val)
+                v_val = validator.validate(r_val, state)
                 validated[name] = v_val
             except Invalid as err:
                 errors[name] = err
@@ -52,11 +43,10 @@ class Document(Schema):
             if name in self.fields:
                 continue
             if not self.allow_extra:
-                errors[name] = Invalid(self._msg['extra'], r_val)
+                errors[name] = Invalid(self._msgs['extra'], r_val)
             elif self.extra_validator:
                 try:
-                    subval = getattr(self.extra_validator, state)
-                    v_val = subval(r_val)
+                    v_val = self.extra_validator.validate(r_val, state)
                     validated[name] = v_val
                 except Invalid as err:
                     errors[name] = err
@@ -68,9 +58,9 @@ class Document(Schema):
         return validated
 
 
-class Array(Schema):
+class Array(Validator):
     _msgs = dict(
-        Schema._msgs,
+        Validator._msgs,
         not_arr='Value must be an array')
 
     def __init__(
@@ -85,14 +75,6 @@ class Array(Schema):
         elif only_validate is Missing:
             only_validate = [slice(None)]
         self.only_validate = only_validate
-
-    def to_py(self, value, state=None):
-        state = 'to_py'
-        return self._validate(value, state)
-
-    def to_db(self, value, state=None):
-        state = 'to_db'
-        return self._validate(value, state)
 
     def _validate_indices(self, length):
         seen = set()
@@ -116,8 +98,7 @@ class Array(Schema):
         for ix in self._validate_indices(len(value)):
             r_val = value[ix]
             try:
-                subval = getattr(self.validator, state)
-                v_val = subval(r_val)
+                v_val = self.validator.validate(r_val, state)
                 validated[ix] = v_val
             except Invalid as err:
                 errors[ix] = err

@@ -30,7 +30,7 @@ class Invalid(Exception):
         return ', '.join(parts) + ')'
 
 
-class Schema(object):
+class Validator(object):
     _msgs = dict(
         missing='Value cannot be missing',
         none='Value cannot be None')
@@ -39,18 +39,9 @@ class Schema(object):
             self,
             allow_none=Missing,
             default=Missing,
-            required=Missing,
-            required_py=Missing,
-            required_db=Missing):
+            required=True):
         self.default = default
-        if required is Missing:
-            self.required_py = self.required_db = False
-        else:
-            self.required_py = self.required_db = required
-        if required_py is not Missing:
-            self.required_py = required_py
-        if required_db is not Missing:
-            self.required_db = required_db
+        self.required = required
         if allow_none is Missing:
             if self.default is None:
                 self.allow_none = True
@@ -59,7 +50,7 @@ class Schema(object):
         else:
             self.allow_none = allow_none
 
-    def to_py(self, value, state=None):
+    def validate(self, value, state=None):
         if value is Missing:
             value = self._get_default()
         if value is None:
@@ -67,19 +58,7 @@ class Schema(object):
                 return value
             else:
                 raise Invalid(self._msgs['none'], value)
-        if value is Missing and self.required_db:
-            raise Invalid(self._msgs['missing'], value)
-        return self._validate(value, state)
-
-    def to_db(self, value, state=None):
-        if value is Missing:
-            value = self._get_default()
-        if value is None:
-            if self.allow_none:
-                return value
-            else:
-                raise Invalid(self._msgs['none'], value)
-        if value is Missing and self.required_py:
+        if value is Missing and self.required:
             raise Invalid(self._msgs['missing'], value)
         return self._validate(value, state)
 
@@ -92,5 +71,5 @@ class Schema(object):
         return self.default
 
 
-class Anything(Schema):
+class Anything(Validator):
     pass

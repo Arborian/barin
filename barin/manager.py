@@ -6,7 +6,10 @@ class Manager(object):
 
     def __init__(self, cname, schema=S.Missing, db=None):
         self._cname = cname
-        self._schema = S.compile_schema(schema)
+        if schema is S.Missing:
+            self._schema = S.Anything()
+        else:
+            self._schema = S.compile_schema(schema)
         self._db = db
         self._all_managers.append(self)
 
@@ -22,14 +25,9 @@ class Manager(object):
     def bind(self, db):
         self._db = db
 
-    def to_py(self, value, state=None):
+    def validate(self, value, state=None):
         if self._schema is not S.Missing:
-            value = self._schema.to_py(value, state)
-        return value
-
-    def to_db(self, value, state=None):
-        if self._schema is not S.Missing:
-            value = self._schema.to_db(value, state)
+            value = self._schema.validate(value, state)
         return value
 
     def __getattr__(self, name):
@@ -54,13 +52,9 @@ class ClassManager(object):
     def __getattr__(self, name):
         return getattr(self._manager, name)
 
-    def to_py(self, value, state=None):
-        value = self._manager.to_py(value, state)
+    def validate(self, value, state=None):
+        value = self._manager.validate(value, state)
         return self._cls(value)
-
-    def to_db(self, value, state=None):
-        value = self._manager.to_db(value, state)
-        return value
 
     def get(self, **kwargs):
         return self.find_one(kwargs)
@@ -119,7 +113,7 @@ class Cursor(object):
 
     def __iter__(self):
         for obj in self.pymongo_cursor:
-            yield self._manager.to_py(obj)
+            yield self._manager.validate(obj)
 
     def all(self):
         return list(self)
