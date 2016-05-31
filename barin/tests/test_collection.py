@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from mock import Mock
 
-from barin.collection import collection, Metadata, Field, Index
+from barin import collection, Metadata, Field, Index
 from barin import schema as S
 
 
