@@ -4,6 +4,8 @@ from datetime import datetime
 
 def compile_schema(s, **options):
     from barin import schema as S
+    if s is None:
+        return S.Anything()
     if isinstance(s, S.Validator):
         return s
     elif isinstance(s, list):
@@ -19,7 +21,10 @@ def compile_schema(s, **options):
             (name, compile_schema(value))
             for name, value in s.items())
         extra_validator = fields.pop(str, S.Missing)
-        return S.Document(fields=fields, extra_validator=extra_validator, **options)
+        return S.Document(
+            fields=fields,
+            extra_validator=extra_validator,
+            **options)
     elif issubclass(s, (int, long)):
         return S.Integer(**options)
     elif issubclass(s, datetime):
