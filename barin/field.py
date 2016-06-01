@@ -35,6 +35,12 @@ class Field(object):
     def __set__(self, inst, value):
         inst[self.name] = value
 
+    def __getattr__(self, name):
+        return Field('{}.{}'.format(self.name, name), self.schema[name])
+
+    def __getitem__(self, name):
+        return Field('{}.{}'.format(self.name, name), self.schema[name])
+
     # Update operators
     def _uop(self, op, value):
         return mql.Clause({op: {self.name: value}})

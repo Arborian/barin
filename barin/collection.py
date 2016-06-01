@@ -17,7 +17,7 @@ class Metadata(object):
             c.m.bind(db)
 
 
-class Collection(base.Document):
+class CollectionDocument(base.Document):
     pass
 
 
@@ -33,6 +33,6 @@ def collection(metadata, cname, *args, **options):
         (f.name, f) for f in fields)
     mgr = manager.Manager(cname, fields, indexes, **options)
     dct = dict(m=mgr, **fields)
-    res = type(cname, (Collection,), dct)
+    res = type(cname, (CollectionDocument,), dct)
     metadata.register(res)
     return res

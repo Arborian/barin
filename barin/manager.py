@@ -10,6 +10,7 @@ class Manager(object):
         self._cname = cname
         self.fields = fields
         self.indexes = indexes
+        self.options = options
         self.query = query.Query(self)
         self.aggregate = query.Aggregate(self)
         self._schema = fields.make_schema(**options)
@@ -17,6 +18,8 @@ class Manager(object):
 
     @property
     def collection(self):
+        if self._db is None:
+            return None
         return getattr(self._db, self._cname)
 
     def bind(self, db):
@@ -31,7 +34,10 @@ class Manager(object):
         return dir(self.collection) + self.__dict__.keys()
 
     def __getattr__(self, name):
-        return getattr(self.collection, name)
+        coll = self.collection
+        if coll is None:
+            raise AttributeError(name)
+        return getattr(coll, name)
 
     def __get__(self, obj, cls=None):
         if obj is None:
@@ -50,6 +56,8 @@ class ClassManager(object):
         self._wrap_single('find_one_and_update')
         self._wrap_single('find_one_and_replace')
         self._wrap_single('find_one_and_delete')
+        self._schema = manager.fields.make_schema(
+            as_class=cls, **manager.options)
 
     def __dir__(self):
         return dir(self._manager) + self.__dict__.keys()
@@ -60,6 +68,11 @@ class ClassManager(object):
     def validate(self, value, state=None):
         value = self._manager.validate(value, state)
         return self._cls(value)
+
+    def create(self, *args, **kwargs):
+        """Create a (validated) document"""
+        val = dict(*args, **kwargs)
+        return self.validate(val)
 
     def get(self, **kwargs):
         return self.find_one(kwargs)
@@ -92,10 +105,11 @@ class InstanceManager(Manager):
 
     def __init__(self, manager, obj):
         self._manager = manager
+        self._class_manager = ClassManager(manager, obj.__class__)
         self._obj = obj
 
     def __getattr__(self, name):
-        return getattr(self._manager, name)
+        return getattr(self._class_manager, name)
 
     def insert(self):
         return self.collection.insert(self._obj)

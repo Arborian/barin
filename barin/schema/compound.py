@@ -1,5 +1,6 @@
 """Schemas for compound types (Documents and Arrays)."""
-from .base import Validator, Invalid, Missing
+from barin.base import Document as BaseDocument
+from barin.schema.base import Validator, Invalid, Missing
 
 
 class Document(Validator):
@@ -13,6 +14,7 @@ class Document(Validator):
             fields=Missing,
             allow_extra=False,
             extra_validator=Missing,
+            as_class=BaseDocument,
             **kwargs):
         super(Document, self).__init__(**kwargs)
         if fields is Missing:
@@ -22,6 +24,22 @@ class Document(Validator):
         self.fields = fields
         self.allow_extra = allow_extra
         self.extra_validator = extra_validator
+        self.as_class = as_class
+
+    def __repr__(self):
+        parts = [self.__class__.__name__]
+        if self.required:
+            parts.append('required')
+        if self.allow_none:
+            parts.append('nullable')
+        if self.default is not Missing:
+            parts.append('default={}'.format(self.default))
+        if self.as_class is not Missing:
+            parts.append('as_class={}'.format(self.as_class))
+        return '<{}>'.format(' '.join(parts))
+
+    def __getitem__(self, name):
+        return self.fields[name]
 
     def _validate(self, value, state=None):
         if not isinstance(value, dict):
@@ -55,7 +73,7 @@ class Document(Validator):
 
         if errors:
             raise Invalid('', value, document=errors)
-        return validated
+        return self.as_class(validated)
 
 
 class Array(Validator):
@@ -75,6 +93,9 @@ class Array(Validator):
         elif only_validate is Missing:
             only_validate = [slice(None)]
         self.only_validate = only_validate
+
+    def __getitem__(self, name):
+        return self.validator
 
     def _validate_indices(self, length):
         seen = set()

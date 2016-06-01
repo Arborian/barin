@@ -29,6 +29,9 @@ class Invalid(Exception):
             parts.append('document={' + part + '}')
         return ', '.join(parts) + ')'
 
+    def __str__(self):
+        return repr(self)
+
 
 class Validator(object):
     _msgs = dict(
