@@ -27,30 +27,59 @@ class Field(object):
     def __repr__(self):
         return '<Field {}: {}>'.format(self.name, self.schema)
 
+    def __get__(self, inst, cls=None):
+        if inst is None:
+            return self
+        return inst[self.name]
+
+    def __set__(self, inst, value):
+        inst[self.name] = value
+
+    # Update operators
+    def _uop(self, op, value):
+        return mql.Clause({op: {self.name: value}})
+
+    inc = partialmethod(_uop, '$inc')
+    mul = partialmethod(_uop, '$mul')
+    rename = partialmethod(_uop, '$rename')
+    set_on_insert = partialmethod(_uop, '$setOnInsert')
+    set = partialmethod(_uop, '$set')
+    unset = partialmethod(_uop, '$unset')
+    min = partialmethod(_uop, '$min')
+    max = partialmethod(_uop, '$max')
+    current_date = partialmethod(_uop, '$currentDate')
+    add_to_set = partialmethod(_uop, '$addToSet')
+    pop = partialmethod(_uop, '$pop')
+    pull_all = partialmethod(_uop, '$pullAll')
+    pull = partialmethod(_uop, '$pull')
+    push_all = partialmethod(_uop, '$pushAll')
+    push = partialmethod(_uop, '$push')
+    bit = partialmethod(_uop, '$bit')
+
     # Query operators
-    def _op(self, op, value):
+    def _qop(self, op, value):
         return mql.Clause({self.name: {op: value}})
 
-    __eq__ = partialmethod(_op, '$eq')
-    __ne__ = partialmethod(_op, '$ne')
-    __gt__ = partialmethod(_op, '$gt')
-    __ge__ = partialmethod(_op, '$gte')
-    __lt__ = partialmethod(_op, '$lt')
-    __le__ = partialmethod(_op, '$lte')
-    in_ = partialmethod(_op, '$in')
-    nin = partialmethod(_op, '$nin')
-    exists = partialmethod(_op, '$exists')
-    type = partialmethod(_op, '$type')
-    where = partialmethod(_op, '$where')
-    geo_within = partialmethod(_op, '$geoWithin')
-    geo_intersects = partialmethod(_op, '$geoIntersects')
-    all = partialmethod(_op, '$all')
-    elem_match = partialmethod(_op, '$elemMatch')
-    size = partialmethod(_op, '$size')
-    bits_all_set = partialmethod(_op, '$bitsAllSet')
-    bits_any_set = partialmethod(_op, '$bitsAnySet')
-    bits_all_clear = partialmethod(_op, '$bitsAllClear')
-    bits_any_clear = partialmethod(_op, '$bitsAnyClear')
+    __eq__ = partialmethod(_qop, '$eq')
+    __ne__ = partialmethod(_qop, '$ne')
+    __gt__ = partialmethod(_qop, '$gt')
+    __ge__ = partialmethod(_qop, '$gte')
+    __lt__ = partialmethod(_qop, '$lt')
+    __le__ = partialmethod(_qop, '$lte')
+    in_ = partialmethod(_qop, '$in')
+    nin = partialmethod(_qop, '$nin')
+    exists = partialmethod(_qop, '$exists')
+    type = partialmethod(_qop, '$type')
+    where = partialmethod(_qop, '$where')
+    geo_within = partialmethod(_qop, '$geoWithin')
+    geo_intersects = partialmethod(_qop, '$geoIntersects')
+    all = partialmethod(_qop, '$all')
+    elem_match = partialmethod(_qop, '$elemMatch')
+    size = partialmethod(_qop, '$size')
+    bits_all_set = partialmethod(_qop, '$bitsAllSet')
+    bits_any_set = partialmethod(_qop, '$bitsAnySet')
+    bits_all_clear = partialmethod(_qop, '$bitsAllClear')
+    bits_any_clear = partialmethod(_qop, '$bitsAnyClear')
 
     def mod(self, divisor, remainder):
         return mql.Clause(

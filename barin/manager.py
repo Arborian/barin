@@ -5,14 +5,14 @@ from . import query
 
 class Manager(object):
 
-    def __init__(self, cname, field_collection, indexes, **options):
+    def __init__(self, cname, fields, indexes, **options):
         # schema=S.Missing, db=None):
         self._cname = cname
-        self.f = field_collection
+        self.fields = fields
         self.indexes = indexes
         self.query = query.Query(self)
         self.aggregate = query.Aggregate(self)
-        self._schema = field_collection.make_schema(**options)
+        self._schema = fields.make_schema(**options)
         self._db = None
 
     @property

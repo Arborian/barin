@@ -29,10 +29,10 @@ def collection(metadata, cname, *args, **options):
             fields.append(arg)
         elif isinstance(arg, index.Index):
             indexes.append(arg)
-    field_collection = field.FieldCollection(
+    fields = field.FieldCollection(
         (f.name, f) for f in fields)
-    mgr = manager.Manager(cname, field_collection, indexes, **options)
-    dct = dict(m=mgr)
+    mgr = manager.Manager(cname, fields, indexes, **options)
+    dct = dict(m=mgr, **fields)
     res = type(cname, (Collection,), dct)
     metadata.register(res)
     return res
