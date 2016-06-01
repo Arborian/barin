@@ -27,6 +27,9 @@ class Manager(object):
             value = self._schema.validate(value, state)
         return value
 
+    def __dir__(self):
+        return dir(self.collection) + self.__dict__.keys()
+
     def __getattr__(self, name):
         return getattr(self.collection, name)
 
@@ -47,6 +50,9 @@ class ClassManager(object):
         self._wrap_single('find_one_and_update')
         self._wrap_single('find_one_and_replace')
         self._wrap_single('find_one_and_delete')
+
+    def __dir__(self):
+        return dir(self._manager) + self.__dict__.keys()
 
     def __getattr__(self, name):
         return getattr(self._manager, name)
