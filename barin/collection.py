@@ -1,5 +1,6 @@
 from . import base
 from . import manager
+from . import query
 from . import field
 from . import index
 
@@ -34,7 +35,7 @@ def collection(metadata, cname, *args, **options):
     schema = field_collection.make_schema()
     mgr = manager.Manager(cname, schema)
     mgr.indexes = indexes
-    dct = dict(m=mgr, c=field_collection)
+    dct = dict(m=mgr, c=field_collection, q=query.Query(mgr))
     res = type(cname, (Collection,), dct)
     metadata.register(res)
     return res
