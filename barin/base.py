@@ -9,6 +9,11 @@ class Document(dict):
         except KeyError:
             raise AttributeError(name)
 
+    def __repr__(self):
+        return '{}: {}'.format(
+            self.__class__.__name__,
+            super(Document, self).__repr__())
+
 
 class _PartialMethod(partial):
 

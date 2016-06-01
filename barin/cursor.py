@@ -11,8 +11,11 @@ class Cursor(object):
         return getattr(self.pymongo_cursor, name)
 
     def __iter__(self):
-        for obj in self.pymongo_cursor:
-            yield self._manager.validate(obj)
+        return self
+
+    def next(self):
+        obj = self.pymongo_cursor.next()
+        return self._manager.validate(obj)
 
     def all(self):
         return list(self)

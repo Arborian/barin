@@ -5,36 +5,13 @@ from .base import Document, partialmethod
 
 class FieldCollection(Document):
 
-    def __get__(self, obj, cls=None):
-        if obj is None:
-            return ClassFieldCollection(self, cls)
-        else:
-            return InstanceFieldCollection(self, obj)
+    def make_schema(self, **options):
+        d_schema = dict((name, f.schema) for name, f in self.items())
+        s_schema = S.compile_schema(d_schema, **options)
+        return s_schema
 
-    def make_schema(self):
-        return dict((name, f.schema) for name, f in self.items())
-
-
-class ClassFieldCollection(FieldCollection):
-
-    def __init__(self, root, cls):
-        self._root = root
-        self._cls = cls
-
-    def __getitem__(self, key):
-        val = self._root[key]
-        return ClassField(val, self._cls)
-
-
-class InstanceFieldCollection(FieldCollection):
-
-    def __init__(self, root, obj):
-        self._root = root
-        self._obj = obj
-
-    def __getitem__(self, key):
-        val = self._root[key]
-        return InstanceField(val, self._obj)
+    def __dir__(self):
+        return self.keys()
 
 
 class Field(object):
@@ -47,21 +24,8 @@ class Field(object):
             self.schema = S.compile_schema(schema, **options)
         self.options = options
 
-    def __get__(self, obj, cls=None):
-        if obj is None:
-            return ClassField(self, cls)
-        else:
-            return InstanceField(self, obj)
-
-
-class ClassField(object):
-
-    def __init__(self, field, cls):
-        self.field = field
-        self.cls = cls
-
-    def __getattr__(self, name):
-        return getattr(self.field, name)
+    def __repr__(self):
+        return '<Field {}: {}>'.format(self.name, self.schema)
 
     # Query operators
     def _op(self, op, value):
@@ -125,13 +89,3 @@ class ClassField(object):
         if max_distance is not None:
             spec['$maxDistance'] = max_distance
         return mql.Clause({self.name: spec})
-
-
-class InstanceField(object):
-
-    def __init__(self, field, obj):
-        self.field = field
-        self.obj = obj
-
-    def __getattr__(self, name):
-        return getattr(self.field, name)

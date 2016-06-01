@@ -1,16 +1,19 @@
 from . import schema as S
 from . import cursor
+from . import query
 
 
 class Manager(object):
 
-    def __init__(self, cname, schema=S.Missing, db=None):
+    def __init__(self, cname, field_collection, indexes, **options):
+        # schema=S.Missing, db=None):
         self._cname = cname
-        if schema is S.Missing:
-            self._schema = S.Anything()
-        else:
-            self._schema = S.compile_schema(schema)
-        self._db = db
+        self.f = field_collection
+        self.indexes = indexes
+        self.query = query.Query(self)
+        self.aggregate = query.Aggregate(self)
+        self._schema = field_collection.make_schema(**options)
+        self._db = None
 
     @property
     def collection(self):

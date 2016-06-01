@@ -32,7 +32,7 @@ class TestCollection(TestCase):
         self.metadata.bind(self.db)
 
     def test_can_find(self):
-        self.db.mydoc.find.return_value = [{'x': 5}]
+        self.db.mydoc.find.return_value = iter([{'x': 5}])
         spec = {'a': {'$exists': True}}
         curs = self.MyDoc.m.find(spec)
         self.db.mydoc.find.assert_called_with(spec)

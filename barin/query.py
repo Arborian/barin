@@ -5,62 +5,13 @@ from .cursor import Cursor
 from . import mql
 
 
-def _append_simple(self, op, value):
-    stage = {op: value}
-    return Query(self._mgr, self._pipeline + [stage])
+class _CursorSource(object):
 
-
-def _append_pipeline(self, op, value):
-    stage = {op: value}
-    return Aggregation(self._mgr, self._pipeline + [stage])
-
-
-class Query(object):
-
-    def __init__(self, mgr, pipeline=None):
-        self._mgr = mgr
-        if pipeline is None:
-            pipeline = []
-        self._pipeline = pipeline
-        self._wrap_mgr('find')
-        self._wrap_mgr('update_one')
-        self._wrap_mgr('update_many')
-        self._wrap_mgr('replace_one')
-        self._wrap_mgr('remove_one')
-        self._wrap_mgr('remove_many')
-        self._wrap_mgr('find_one_and_update')
-        self._wrap_mgr('find_one_and_replace')
-        self._wrap_mgr('find_one_and_delete')
-
-    match = partialmethod(_append_simple, '$match')
-    limit = partialmethod(_append_simple, '$limit')
-    skip = partialmethod(_append_simple, '$skip')
-    sort = partialmethod(_append_simple, '$sort')
-    geo_near = partialmethod(_append_simple, '$geoNear')
-
-    project = partialmethod(_append_pipeline, '$project')
-    redact = partialmethod(_append_pipeline, '$redact')
-    unwind = partialmethod(_append_pipeline, '$unwind')
-    group = partialmethod(_append_pipeline, '$group')
-    sample = partialmethod(_append_pipeline, '$sample')
-    lookup = partialmethod(_append_pipeline, '$lookup')
-    index_stats = partialmethod(_append_pipeline, '$indexStats')
+    def get_cursor(self):
+        raise NotImplementedError()
 
     def __iter__(self):
-        return iter(self._mgr.find(**self._compile_query()))
-
-    def out(self, collection_name):
-        pipeline = self._pipeline + [{'$out': collection_name}]
-        cursor = self._mgr.collection.aggregate(pipeline)
-        return iter(Cursor(self._mgr, cursor))
-
-    def sort(self, key_or_list, direction=1):
-        if isinstance(key_or_list, basestring):
-            sval = [(key_or_list, direction)]
-        else:
-            sval = key_or_list
-        stage = {'$sort': sval}
-        return Query(self._mgr, self._pipeline + [stage])
+        return iter(self.get_cursor())
 
     def all(self):
         return list(self)
@@ -77,6 +28,45 @@ class Query(object):
             return res
         raise ValueError('More than one result returned for one()')
 
+
+class Query(_CursorSource):
+
+    def __init__(self, mgr, pipeline=None):
+        self._mgr = mgr
+        if pipeline is None:
+            pipeline = []
+        self.pipeline = pipeline
+        self._wrap_mgr('find')
+        self._wrap_mgr('update_one')
+        self._wrap_mgr('update_many')
+        self._wrap_mgr('replace_one')
+        self._wrap_mgr('remove_one')
+        self._wrap_mgr('remove_many')
+        self._wrap_mgr('find_one_and_update')
+        self._wrap_mgr('find_one_and_replace')
+        self._wrap_mgr('find_one_and_delete')
+
+    def _append(self, op, value):
+        stage = {op: value}
+        return Query(self._mgr, self.pipeline + [stage])
+
+    match = partialmethod(_append, '$match')
+    limit = partialmethod(_append, '$limit')
+    skip = partialmethod(_append, '$skip')
+    sort = partialmethod(_append, '$sort')
+    geo_near = partialmethod(_append, '$geoNear')
+
+    def get_cursor(self):
+        return self._mgr.find(**self._compile_query())
+
+    def sort(self, key_or_list, direction=1):
+        if isinstance(key_or_list, basestring):
+            sval = [(key_or_list, direction)]
+        else:
+            sval = key_or_list
+        stage = {'$sort': sval}
+        return Query(self._mgr, self.pipeline + [stage])
+
     def _wrap_mgr(self, name):
         def wrapper(*args, **kwargs):
             orig = getattr(self._mgr, name)
@@ -90,7 +80,7 @@ class Query(object):
         limits = []
         skips = []
         sorts = []
-        for stage in self._pipeline:
+        for stage in self.pipeline:
             op, value = stage.items()[0]
             if op == '$match':
                 filters.append(value)
@@ -111,33 +101,44 @@ class Query(object):
         return result
 
 
-class Aggregation(Query):
+class Aggregate(_CursorSource):
+    OPS_MODIFYING_DOC_STRUCTURE = set([
+        '$project', '$redact', '$unwind', '$group',
+        '$lookup', '$indexStats'])
 
     def __init__(self, mgr, pipeline=None):
-        super(Aggregation, self).__init__(mgr, pipeline)
-        self._unimplement('update_one')
-        self._unimplement('update_many')
-        self._unimplement('replace_one')
-        self._unimplement('remove_one')
-        self._unimplement('remove_many')
-        self._unimplement('find_one_and_update')
-        self._unimplement('find_one_and_replace')
-        self._unimplement('find_one_and_delete')
+        self._mgr = mgr
+        if pipeline is None:
+            pipeline = []
+        self.pipeline = pipeline
 
-    project = partialmethod(_append_pipeline, '$project')
-    match = partialmethod(_append_pipeline, '$match')
-    limit = partialmethod(_append_pipeline, '$limit')
-    skip = partialmethod(_append_pipeline, '$skip')
-    sort = partialmethod(_append_pipeline, '$sort')
-    geo_near = partialmethod(_append_pipeline, '$geoNear')
+    def _append(self, op, value):
+        stage = {op: value}
+        return Aggregate(self._mgr, self.pipeline + [stage])
 
-    def __iter__(self):
-        cursor = self._mgr.collection.aggregate(
-            self._pipeline)
+    project = partialmethod(_append, '$project')
+    match = partialmethod(_append, '$match')
+    limit = partialmethod(_append, '$limit')
+    skip = partialmethod(_append, '$skip')
+    sort = partialmethod(_append, '$sort')
+    geo_near = partialmethod(_append, '$geoNear')
+    redact = partialmethod(_append, '$redact')
+    unwind = partialmethod(_append, '$unwind')
+    group = partialmethod(_append, '$group')
+    sample = partialmethod(_append, '$sample')
+    lookup = partialmethod(_append, '$lookup')
+    index_stats = partialmethod(_append, '$indexStats')
+
+    def out(self, collection_name):
+        pipeline = self.pipeline + [{'$out': collection_name}]
+        cursor = self._mgr.collection.aggregate(pipeline)
         return iter(Cursor(self._mgr, cursor))
 
-    def _unimplement(self, name):
-        def wrapper(*args, **kwargs):
-            raise NotImplementedError(name)
-        wrapper.__name__ = name
-        return wrapper
+    def get_cursor(self):
+        pymongo_cursor = self._mgr.collection.aggregate(self.pipeline)
+
+        # Wrap it in a barin cursor if the document structure is unmodified
+        for stage in self.pipeline:
+            if stage.keys()[0] in self.OPS_MODIFYING_DOC_STRUCTURE:
+                return pymongo_cursor
+        return Cursor(self._mgr, pymongo_cursor)

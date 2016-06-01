@@ -50,6 +50,16 @@ class Validator(object):
         else:
             self.allow_none = allow_none
 
+    def __repr__(self):
+        parts = [self.__class__.__name__]
+        if self.required:
+            parts.append('required')
+        if self.allow_none:
+            parts.append('nullable')
+        if self.default is not Missing:
+            parts.append('default={}'.format(self.default))
+        return '<{}>'.format(' '.join(parts))
+
     def validate(self, value, state=None):
         if value is Missing:
             value = self._get_default()
