@@ -49,6 +49,11 @@ class Query(object):
     def __iter__(self):
         return iter(self._mgr.find(**self._compile_query()))
 
+    def out(self, collection_name):
+        pipeline = self._pipeline + [{'$out': collection_name}]
+        cursor = self._mgr.collection.aggregate(pipeline)
+        return iter(Cursor(self._mgr, cursor))
+
     def sort(self, key_or_list, direction=1):
         if isinstance(key_or_list, basestring):
             sval = [(key_or_list, direction)]
@@ -108,6 +113,17 @@ class Query(object):
 
 class Aggregation(Query):
 
+    def __init__(self, mgr, pipeline=None):
+        super(Aggregation, self).__init__(mgr, pipeline)
+        self._unimplement('update_one')
+        self._unimplement('update_many')
+        self._unimplement('replace_one')
+        self._unimplement('remove_one')
+        self._unimplement('remove_many')
+        self._unimplement('find_one_and_update')
+        self._unimplement('find_one_and_replace')
+        self._unimplement('find_one_and_delete')
+
     project = partialmethod(_append_pipeline, '$project')
     match = partialmethod(_append_pipeline, '$match')
     limit = partialmethod(_append_pipeline, '$limit')
@@ -119,3 +135,9 @@ class Aggregation(Query):
         cursor = self._mgr.collection.aggregate(
             self._pipeline)
         return iter(Cursor(self._mgr, cursor))
+
+    def _unimplement(self, name):
+        def wrapper(*args, **kwargs):
+            raise NotImplementedError(name)
+        wrapper.__name__ = name
+        return wrapper
