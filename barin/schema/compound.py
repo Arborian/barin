@@ -86,6 +86,7 @@ class Array(Validator):
             validator=Missing,
             only_validate=Missing,
             **kwargs):
+        kwargs.setdefault('default', list)
         super(Array, self).__init__(**kwargs)
         self.validator = validator
         if isinstance(only_validate, slice):
