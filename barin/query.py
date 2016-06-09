@@ -71,7 +71,7 @@ class Query(_CursorSource):
         def wrapper(*args, **kwargs):
             orig = getattr(self._mgr, name)
             qres = self._compile_query()
-            res = orig(qres['filter'])
+            res = orig(qres['filter'], *args, **kwargs)
             if qres['limit']:
                 res = res.limit(qres['limit'])
             if qres['skip']:
