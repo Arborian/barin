@@ -72,11 +72,11 @@ class Query(_CursorSource):
             orig = getattr(self._mgr, name)
             qres = self._compile_query()
             res = orig(qres['filter'], *args, **kwargs)
-            if qres['limit']:
+            if 'limit' in qres:
                 res = res.limit(qres['limit'])
-            if qres['skip']:
+            if 'skip' in qres:
                 res = res.skip(qres['skip'])
-            if qres['sort']:
+            if 'sort' in qres:
                 res = res.sort(qres['sort'])
             return res
         wrapper.__name__ = 'wrapped_{}'.format(name)
