@@ -32,6 +32,21 @@ class Invalid(Exception):
     def __str__(self):
         return repr(self)
 
+    def unpack_errors(self):
+        if self.array is not None:
+            result = []
+            for v in self.array:
+                if isinstance(v, Invalid):
+                    result.append(v.unpack_errors())
+                else:
+                    result.append(v)
+        elif self.document is not None:
+            return dict(
+                (k, v.unpack_errors())
+                for k, v in self.document.items())
+        else:
+            return self.msg
+
 
 class Validator(object):
     _msgs = dict(
@@ -85,4 +100,7 @@ class Validator(object):
 
 
 class Anything(Validator):
-    pass
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault('allow_none', True)
+        super(Anything, self).__init__(**kwargs)

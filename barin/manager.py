@@ -95,7 +95,7 @@ class ClassManager(object):
             res = orig(*args, **kwargs)
             if res is None:
                 return res
-            return self._cls(res)
+            return self.validate(res)
         wrapper.__name__ = 'wrapped_{}'.format(name)
         setattr(self, name, wrapper)
         return wrapper
@@ -116,3 +116,9 @@ class InstanceManager(Manager):
 
     def delete(self):
         return self.collection.delete(self._obj._id)
+
+    def replace(self, **kwargs):
+        return self.collection.replace_one({'_id': self._obj._id}, self._obj, **kwargs)
+
+    def update(self, update_spec, **kwargs):
+        return self.collection.update_one({'_id': self._obj._id}, update_spec, **kwargs)

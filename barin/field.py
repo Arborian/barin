@@ -33,7 +33,7 @@ class Field(object):
         return inst[self.name]
 
     def __set__(self, inst, value):
-        inst[self.name] = value
+        inst[self.name] = self.schema.validate(value)
 
     def __getattr__(self, name):
         return Field('{}.{}'.format(self.name, name), self.schema[name])
