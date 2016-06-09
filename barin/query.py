@@ -70,7 +70,15 @@ class Query(_CursorSource):
     def _wrap_mgr(self, name):
         def wrapper(*args, **kwargs):
             orig = getattr(self._mgr, name)
-            return orig(self._compile_query(), *args, **kwargs)
+            qres = self._compile_query()
+            res = orig(qres['filter'])
+            if qres['limit']:
+                res = res.limit(qres['limit'])
+            if qres['skip']:
+                res = res.skip(qres['skip'])
+            if qres['sort']:
+                res = res.sort(qres['sort'])
+            return res
         wrapper.__name__ = 'wrapped_{}'.format(name)
         setattr(self, name, wrapper)
         return wrapper
