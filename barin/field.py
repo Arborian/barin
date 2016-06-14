@@ -49,10 +49,17 @@ class Field(object):
         inst[self.name] = self.schema.validate(value)
 
     def __getattr__(self, name):
-        return Field('{}.{}'.format(self.name, name), self.schema[name])
+        return self[name]
 
     def __getitem__(self, name):
-        return Field('{}.{}'.format(self.name, name), self.schema[name])
+        subname = '{}.{}'.format(self.name, name)
+        subfield = self.schema[name]
+        if isinstance(subfield, Field):
+            return Field(subname, subfield.schema)
+        elif isinstance(subfield, S.Validator):
+            return Field(subname, subfield)
+        else:
+            raise KeyError(name)
 
     # Update operators
     def _uop(self, op, value):
