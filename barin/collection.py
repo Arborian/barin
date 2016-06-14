@@ -2,6 +2,7 @@ from . import base
 from . import manager
 from . import field
 from . import index
+from . import errors
 
 
 class Metadata(object):
@@ -17,10 +18,6 @@ class Metadata(object):
             c.m.bind(db)
 
 
-class CollectionDocument(base.Document):
-    pass
-
-
 def collection(metadata, cname, *args, **options):
     fields = []
     indexes = []
@@ -29,10 +26,27 @@ def collection(metadata, cname, *args, **options):
             fields.append(arg)
         elif isinstance(arg, index.Index):
             indexes.append(arg)
+        else:
+            raise errors.SchemaError('Unknown argument type {}'.format(arg))
     fields = field.FieldCollection(
         (f.name, f) for f in fields)
-    mgr = manager.Manager(cname, fields, indexes, **options)
-    dct = dict(m=mgr, **fields)
-    res = type(cname, (CollectionDocument,), dct)
+    mgr = manager.CollectionManager(cname, fields, indexes, **options)
+    dct = dict(m=mgr, __barin__=mgr, **fields)
+    res = type(cname, (base.Document,), dct)
     metadata.register(res)
+    return res
+
+
+def subdocument(name, *args, **options):
+    fields = []
+    for arg in args:
+        if isinstance(arg, field.Field):
+            fields.append(arg)
+        else:
+            raise errors.SchemaError('Unknown argument type {}'.format(arg))
+    fields = field.FieldCollection(
+        (f.name, f) for f in fields)
+    mgr = manager.Manager(name, fields, **options)
+    dct = dict(m=mgr, __barin__=mgr, **fields)
+    res = type(name, (base.Document,), dct)
     return res

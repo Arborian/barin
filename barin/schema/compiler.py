@@ -4,9 +4,14 @@ from datetime import datetime
 
 def compile_schema(s, **options):
     from barin import schema as S
+    from barin import manager
     if s is None:
         return S.Anything()
     if isinstance(s, S.Validator):
+        return s
+    elif hasattr(s, '__barin__'):
+        return s.__barin__
+    elif isinstance(s, manager.ClassManager):
         return s
     elif isinstance(s, list):
         if len(s) == 1:
@@ -25,6 +30,8 @@ def compile_schema(s, **options):
             fields=fields,
             extra_validator=extra_validator,
             **options)
+    elif not isinstance(s, type):
+        raise S.Invalid('Invalid schema {}'.format(s), s)
     elif issubclass(s, (int, long)):
         return S.Integer(**options)
     elif issubclass(s, datetime):
@@ -34,4 +41,4 @@ def compile_schema(s, **options):
     elif issubclass(s, basestring):
         return S.Unicode(**options)
     else:
-        raise S.Invalid('Invalid schema {}'.format(s))
+        raise S.Invalid('Invalid schema {}'.format(s), s)

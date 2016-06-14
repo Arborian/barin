@@ -42,7 +42,7 @@ class TestCollection(TestCase):
     def test_can_insert(self):
         doc = self.MyDoc(x=5)
         doc.m.insert()
-        self.db.mydoc.insert.assert_called_with({'x': 5})
+        self.db.mydoc.insert_one.assert_called_with({'x': 5})
 
 
 class TestSubdoc(TestCase):

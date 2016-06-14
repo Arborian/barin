@@ -1,6 +1,7 @@
 """Schemas for compound types (Documents and Arrays)."""
 from barin.base import Document as BaseDocument
 from barin.schema.base import Validator, Invalid, Missing
+from barin.schema.compiler import compile_schema
 
 
 class Document(Validator):
@@ -21,7 +22,9 @@ class Document(Validator):
             fields = {}
         if extra_validator is not Missing:
             allow_extra = True
-        self.fields = fields
+        self.fields = dict(
+            (k, compile_schema(v))
+            for k, v in fields.items())
         self.allow_extra = allow_extra
         self.extra_validator = extra_validator
         self.as_class = as_class
@@ -88,7 +91,7 @@ class Array(Validator):
             **kwargs):
         kwargs.setdefault('default', list)
         super(Array, self).__init__(**kwargs)
-        self.validator = validator
+        self.validator = compile_schema(validator, **kwargs)
         if isinstance(only_validate, slice):
             only_validate = [only_validate]
         elif only_validate is Missing:
