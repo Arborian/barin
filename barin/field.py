@@ -1,14 +1,19 @@
 from . import mql
 from . import schema as S
 from .base import Document, partialmethod
+from .util import reify
 
 
 class FieldCollection(Document):
 
-    def make_schema(self, **options):
+    def make_schema(self, metadata, **options):
         d_schema = dict((name, f.schema) for name, f in self.items())
-        s_schema = S.compile_schema(d_schema, **options)
+        s_schema = S.compile_schema(metadata, d_schema, **options)
         return s_schema
+
+    def bind_metadata(self, metadata):
+        for fld in self.values():
+            fld.bind_metadata(metadata)
 
     def __dir__(self):
         return self.keys()
@@ -18,11 +23,19 @@ class Field(object):
 
     def __init__(self, name, schema, **options):
         self.name = name
-        if isinstance(schema, type) and issubclass(schema, S.Validator):
-            self.schema = schema(**options)
-        else:
-            self.schema = S.compile_schema(schema, **options)
+        self._schema = schema
         self.options = options
+        self.metadata = None
+
+    def bind_metadata(self, metadata):
+        self.metadata = metadata
+
+    @reify
+    def schema(self):
+        if isinstance(self._schema, type):
+            if issubclass(self._schema, S.Validator):
+                return self._schema(**self.options)
+        return S.compile_schema(self.metadata, self._schema, **self.options)
 
     def __repr__(self):
         return '<Field {}: {}>'.format(self.name, self.schema)

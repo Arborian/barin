@@ -1,15 +1,16 @@
 from . import schema as S
 from . import cursor
 from . import query
+from .util import reify
 
 
 class Manager(object):
 
-    def __init__(self, name, fields, **options):
+    def __init__(self, metadata, name, fields, **options):
+        self.metadata = metadata
         self._name = name
         self.fields = fields
         self.options = options
-        self.schema = fields.make_schema(**options)
 
     def __get__(self, obj, cls=None):
         class_manager = ClassManager(self, cls)
@@ -17,6 +18,10 @@ class Manager(object):
             return class_manager
         else:
             return InstanceManager(class_manager, obj)
+
+    @reify
+    def schema(self):
+        return self.fields.make_schema(self.metadata, **self.options)
 
     def validate(self, value, state=None):
         if self.schema is not S.Missing:
@@ -34,9 +39,13 @@ class ClassManager(object):
     def __init__(self, manager, cls):
         self._manager = manager
         self._cls = cls
-        options = dict(manager.options)
-        options.setdefault('as_class', cls)
-        self.schema = manager.fields.make_schema(**options)
+
+    @reify
+    def schema(self):
+        options = dict(self._manager.options)
+        options.setdefault('as_class', self._cls)
+        return self.fields.make_schema(
+            self._manager.metadata, **options)
 
     def __dir__(self):
         return dir(self._manager) + self.__dict__.keys()
@@ -62,8 +71,8 @@ class InstanceManager(object):
 
 class CollectionManager(Manager):
 
-    def __init__(self, cname, fields, indexes, **options):
-        super(CollectionManager, self).__init__(cname, fields, **options)
+    def __init__(self, metadata, cname, fields, indexes, **options):
+        super(CollectionManager, self).__init__(metadata, cname, fields, **options)
         self.indexes = indexes
         self._db = None
 

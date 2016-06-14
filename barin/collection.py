@@ -10,6 +10,12 @@ class Metadata(object):
     def __init__(self):
         self.collections = []
 
+    def __getitem__(self, index):
+        for c in self.collections:
+            if c.m.name == index:
+                return c
+        raise KeyError(index)
+
     def register(self, collection):
         self.collections.append(collection)
 
@@ -30,14 +36,15 @@ def collection(metadata, cname, *args, **options):
             raise errors.SchemaError('Unknown argument type {}'.format(arg))
     fields = field.FieldCollection(
         (f.name, f) for f in fields)
-    mgr = manager.CollectionManager(cname, fields, indexes, **options)
+    fields.bind_metadata(metadata)
+    mgr = manager.CollectionManager(metadata, cname, fields, indexes, **options)
     dct = dict(m=mgr, __barin__=mgr, **fields)
     res = type(cname, (base.Document,), dct)
     metadata.register(res)
     return res
 
 
-def subdocument(name, *args, **options):
+def subdocument(metadata, name, *args, **options):
     fields = []
     for arg in args:
         if isinstance(arg, field.Field):
@@ -46,7 +53,8 @@ def subdocument(name, *args, **options):
             raise errors.SchemaError('Unknown argument type {}'.format(arg))
     fields = field.FieldCollection(
         (f.name, f) for f in fields)
-    mgr = manager.Manager(name, fields, **options)
+    fields.bind_metadata(metadata)
+    mgr = manager.Manager(metadata, name, fields, **options)
     dct = dict(m=mgr, __barin__=mgr, **fields)
     res = type(name, (base.Document,), dct)
     return res

@@ -49,7 +49,7 @@ class TestSubdoc(TestCase):
 
         def setUp(self):
             metadata = Metadata()
-            subdoc = S.compile_schema({'x': int})
+            subdoc = S.compile_schema(metadata, {'x': int})
             self.MyDoc = collection(
                 metadata, 'mydoc',
                 Field('x', subdoc),
