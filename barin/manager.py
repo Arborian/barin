@@ -11,13 +11,18 @@ class Manager(object):
         self._name = name
         self.fields = fields
         self.options = options
+        self._class_managers = {}
 
     def __get__(self, obj, cls=None):
-        class_manager = ClassManager(self, cls)
+        if cls is None:
+            cls = obj.__class__
+        cm = self._class_managers.get(cls)
+        if cm is None:
+            cm = ClassManager(self, cls)
         if obj is None:
-            return class_manager
+            return cm
         else:
-            return InstanceManager(class_manager, obj)
+            return InstanceManager(cm, obj)
 
     def __getitem__(self, name):
         return self.fields[name]
@@ -117,6 +122,8 @@ class ClassCollectionManager(ClassManager):
         self._wrap_single('find_one_and_update')
         self._wrap_single('find_one_and_replace')
         self._wrap_single('find_one_and_delete')
+        self.query = query.Query(self)
+        self.aggregate = query.Aggregate(self)
 
     def get(self, **kwargs):
         return self.find_one(kwargs)
