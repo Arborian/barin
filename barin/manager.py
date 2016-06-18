@@ -69,6 +69,11 @@ class ClassManager(object):
             value = self.schema.validate(value, state)
         return value
 
+    def create(self, *args, **kwargs):
+        """Create a (validated) document."""
+        val = dict(*args, **kwargs)
+        return self.validate(val)
+
 
 class InstanceManager(object):
 
