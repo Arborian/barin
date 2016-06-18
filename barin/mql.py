@@ -37,6 +37,18 @@ def _logical_nary_op(op):
     return inner
 
 
+def _logical_nary_op(op):
+    def inner(*parts):
+        cur = None
+        for part in parts:
+            if not isinstance(part, dict):
+                raise errors.QueryError(
+                    'Illegal {} clause: {}'.format(op, part))
+        return {op: parts}
+    inner.__name__ = op
+    return inner
+
+
 def and_(*parts):
     """Try to build a compound document without using $and."""
     result = None

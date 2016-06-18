@@ -53,7 +53,10 @@ class Field(object):
 
     def __getitem__(self, name):
         subname = '{}.{}'.format(self.name, name)
-        subfield = self.schema[name]
+        try:
+            subfield = self.schema[name]
+        except KeyError:
+            return Field(subname, S.Anything())
         if isinstance(subfield, Field):
             return Field(subname, subfield.schema)
         elif isinstance(subfield, S.Validator):
