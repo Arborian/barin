@@ -61,10 +61,10 @@ class TestSubdoc(TestCase):
 
         def test_dotted_document(self):
             self.assertEqual(
-                {'x.x': {'$eq': 5}},
+                {'x.x': 5},
                 self.MyDoc.x.x == 5)
 
         def test_dotted_array(self):
             self.assertEqual(
-                {'y.0': {'$eq': 5}},
+                {'y.0': 5},
                 self.MyDoc.y[0] == 5)

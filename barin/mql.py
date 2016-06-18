@@ -40,12 +40,19 @@ def and_(*parts):
             raise errors.QueryError(
                 'Illegal $and clause: {}'.format(part))
         for k, v in part.items():
-            r_v = result.setdefault(k, {})
-            if set(v.keys()).intersection(r_v):
+            if isinstance(v, dict):
+                r_v = result.setdefault(k, {})
+                if set(v.keys()).intersection(r_v):
+                    raise errors.ConflictError(
+                        'Conflict for {}: {} and {}'.format(
+                            k, r_v, v))
+                r_v.update(v)
+            elif k in result:
                 raise errors.ConflictError(
                     'Conflict for {}: {} and {}'.format(
-                        k, r_v, v))
-            r_v.update(v)
+                        k, result[k], v))
+            else:
+                result[k] = v
     return result
 
 # and_ = _logical_nary_op('$and')

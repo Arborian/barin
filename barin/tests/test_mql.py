@@ -14,7 +14,7 @@ class TestMQL(TestCase):
 
     def test_eq(self):
         self.assertEqual(
-            {'x': {'$eq': 5}},
+            {'x': 5},
             self.MyDoc.x == 5)
 
     def test_mod(self):

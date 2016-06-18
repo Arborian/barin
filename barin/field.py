@@ -89,7 +89,9 @@ class Field(object):
     def _qop(self, op, value):
         return mql.Clause({self.name: {op: value}})
 
-    __eq__ = partialmethod(_qop, '$eq')
+    def __eq__(self, value):
+        return mql.Clause({self.name: value})
+
     __ne__ = partialmethod(_qop, '$ne')
     __gt__ = partialmethod(_qop, '$gt')
     __ge__ = partialmethod(_qop, '$gte')
