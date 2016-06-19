@@ -88,7 +88,8 @@ class InstanceManager(object):
 class CollectionManager(Manager):
 
     def __init__(self, metadata, cname, fields, indexes, **options):
-        super(CollectionManager, self).__init__(metadata, cname, fields, **options)
+        super(CollectionManager, self).__init__(
+            metadata, cname, fields, **options)
         self.indexes = indexes
         self._db = None
 
@@ -142,9 +143,6 @@ class ClassCollectionManager(ClassManager):
     def insert_many(self, objs):
         return self.collection.insert_many(objs)
 
-    def remove_one(self, obj):
-        return self.collection.remove_one(obj._id)
-
     def replace_one(self, obj, **kwargs):
         return self.collection.replace_one(
             {'_id': self._obj._id},
@@ -177,7 +175,7 @@ class InstanceCollectionManager(InstanceManager):
         return self._class_manager.insert_one(self._obj)
 
     def remove(self):
-        return self._class_manager.remove_one({'_id': self._obj._id})
+        return self._class_manager.remove({'_id': self._obj._id})
 
     def replace(self, **kwargs):
         return self._class_manager.replace_one(
