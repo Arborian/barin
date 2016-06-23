@@ -143,11 +143,6 @@ class ClassCollectionManager(ClassManager):
     def insert_many(self, objs):
         return self.collection.insert_many(objs)
 
-    def replace_one(self, obj, **kwargs):
-        return self.collection.replace_one(
-            {'_id': self._obj._id},
-            self, **kwargs)
-
     def _wrap_cursor(self, name):
         def wrapper(*args, **kwargs):
             orig = getattr(self.collection, name)
