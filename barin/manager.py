@@ -1,3 +1,5 @@
+import pymongo
+
 from . import schema as S
 from . import cursor
 from . import query
@@ -177,6 +179,16 @@ class InstanceCollectionManager(InstanceManager):
             {'_id': self._obj._id}, self._obj, **kwargs)
 
     def update(self, update_spec, **kwargs):
-        return self._class_manager.update_one(
-            {'_id': self._obj._id},
-            update_spec, **kwargs)
+        refresh = kwargs.pop('refresh', False)
+        if refresh:
+            obj = self._class_manager.find_one_and_update(
+                {'_id': self._obj._id},
+                update_spec,
+                return_document=pymongo.ReturnDocument.AFTER,
+                **kwargs)
+            self._obj.clear()
+            self._obj.update(obj)
+        else:
+            return self._class_manager.update_one(
+                {'_id': self._obj._id},
+                update_spec, **kwargs)
