@@ -42,6 +42,10 @@ def and_(*parts):
         for k, v in part.items():
             if isinstance(v, dict):
                 r_v = result.setdefault(k, {})
+                if not isinstance(r_v, dict):
+                    raise errors.ConflictError(
+                        'Conflict for {}: {} and {}'.format(
+                            k, r_v, v))
                 if set(v.keys()).intersection(r_v):
                     raise errors.ConflictError(
                         'Conflict for {}: {} and {}'.format(
