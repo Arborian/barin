@@ -34,10 +34,10 @@ def collection(metadata, cname, *args, **options):
             indexes.append(arg)
         else:
             raise errors.SchemaError('Unknown argument type {}'.format(arg))
-    fields = field.FieldCollection(
-        (f.name, f) for f in fields)
+    fields = field.FieldCollection(fields)
     fields.bind_metadata(metadata)
-    mgr = manager.CollectionManager(metadata, cname, fields, indexes, **options)
+    mgr = manager.CollectionManager(
+        metadata, cname, fields, indexes, **options)
     dct = dict(m=mgr, __barin__=mgr, **fields)
     res = type(cname, (base.Document,), dct)
     metadata.register(res)
@@ -51,8 +51,7 @@ def subdocument(metadata, name, *args, **options):
             fields.append(arg)
         else:
             raise errors.SchemaError('Unknown argument type {}'.format(arg))
-    fields = field.FieldCollection(
-        (f.name, f) for f in fields)
+    fields = field.FieldCollection(fields)
     fields.bind_metadata(metadata)
     mgr = manager.Manager(metadata, name, fields, **options)
     dct = dict(m=mgr, __barin__=mgr, **fields)

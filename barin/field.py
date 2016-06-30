@@ -6,8 +6,12 @@ from .util import reify
 
 class FieldCollection(Document):
 
+    def __init__(self, fields):
+        super(FieldCollection, self).__init__(
+            (f._name, f) for f in fields)
+
     def make_schema(self, metadata, **options):
-        d_schema = dict((name, f.schema) for name, f in self.items())
+        d_schema = dict((name, f._schema) for name, f in self.items())
         s_schema = S.compile_schema(metadata, d_schema, **options)
         return s_schema
 
@@ -22,39 +26,40 @@ class FieldCollection(Document):
 class Field(object):
 
     def __init__(self, name, schema, **options):
-        self.name = name
-        self._schema = schema
-        self.options = options
-        self.metadata = None
+        self._name = name
+        self._orig_schema = schema
+        self._options = options
+        self._metadata = None
 
     def bind_metadata(self, metadata):
-        self.metadata = metadata
+        self._metadata = metadata
 
     @reify
-    def schema(self):
-        if isinstance(self._schema, type):
-            if issubclass(self._schema, S.Validator):
-                return self._schema(**self.options)
-        return S.compile_schema(self.metadata, self._schema, **self.options)
+    def _schema(self):
+        if isinstance(self._orig_schema, type):
+            if issubclass(self._orig_schema, S.Validator):
+                return self._orig_schema(**self._options)
+        return S.compile_schema(
+            self._metadata, self._orig_schema, **self._options)
 
     def __repr__(self):
-        return '<Field {}: {}>'.format(self.name, self.schema)
+        return '<Field {}: {}>'.format(self._name, self._schema)
 
     def __get__(self, inst, cls=None):
         if inst is None:
             return self
-        return inst[self.name]
+        return inst[self._name]
 
     def __set__(self, inst, value):
-        inst[self.name] = self.schema.validate(value)
+        inst[self._name] = self._schema.validate(value)
 
     def __getattr__(self, name):
         return self[name]
 
     def __getitem__(self, name):
-        subname = '{}.{}'.format(self.name, name)
+        subname = '{}.{}'.format(self._name, name)
         try:
-            subfield = self.schema[name]
+            subfield = self._schema[name]
         except KeyError:
             return Field(subname, S.Anything())
         if isinstance(subfield, Field):
@@ -66,7 +71,7 @@ class Field(object):
 
     # Update operators
     def _uop(self, op, value):
-        return mql.Clause({op: {self.name: value}})
+        return mql.Clause({op: {self._name: value}})
 
     inc = partialmethod(_uop, '$inc')
     mul = partialmethod(_uop, '$mul')
@@ -87,10 +92,10 @@ class Field(object):
 
     # Query operators
     def _qop(self, op, value):
-        return mql.Clause({self.name: {op: value}})
+        return mql.Clause({self._name: {op: value}})
 
     def __eq__(self, value):
-        return mql.Clause({self.name: value})
+        return mql.Clause({self._name: value})
 
     __ne__ = partialmethod(_qop, '$ne')
     __gt__ = partialmethod(_qop, '$gt')
@@ -114,13 +119,13 @@ class Field(object):
 
     def mod(self, divisor, remainder):
         return mql.Clause(
-            {self.name: {'$mod': [divisor, remainder]}})
+            {self._name: {'$mod': [divisor, remainder]}})
 
     def regex(self, regex, options=None):
         spec = {'$regex': regex}
         if options is not None:
             spec['$options'] = options
-        return mql.Clause({self.name: spec})
+        return mql.Clause({self._name: spec})
 
     def text(
             self, search,
@@ -132,7 +137,7 @@ class Field(object):
             spec['$caseSensitive'] = case_sensitive
         if diacritic_sensitive:
             spec['$diacriticSensitive'] = diacritic_sensitive
-        return mql.Clause({self.name: spec})
+        return mql.Clause({self._name: spec})
 
     def near(self, value, min_distance=None, max_distance=None):
         spec = {'$near': value}
@@ -140,7 +145,7 @@ class Field(object):
             spec['$minDistance'] = min_distance
         if max_distance is not None:
             spec['$maxDistance'] = max_distance
-        return mql.Clause({self.name: spec})
+        return mql.Clause({self._name: spec})
 
     def near_sphere(self, value, min_distance=None, max_distance=None):
         spec = {'$nearSphere': value}
@@ -148,4 +153,4 @@ class Field(object):
             spec['$minDistance'] = min_distance
         if max_distance is not None:
             spec['$maxDistance'] = max_distance
-        return mql.Clause({self.name: spec})
+        return mql.Clause({self._name: spec})

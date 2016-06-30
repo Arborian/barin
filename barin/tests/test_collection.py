@@ -12,13 +12,13 @@ class TestField(TestCase):
 
     def test_field_schema(self):
         fld = Field('x', int)
-        self.assertIsInstance(fld.schema, S.Integer)
-        self.assertEqual(fld.schema.required, True)
-        self.assertEqual(fld.schema.default, S.Missing)
+        self.assertIsInstance(fld._schema, S.Integer)
+        self.assertEqual(fld._schema.required, True)
+        self.assertEqual(fld._schema.default, S.Missing)
 
     def test_field_schema_options(self):
         fld = Field('x', int, default=0)
-        self.assertEqual(fld.schema.default, 0)
+        self.assertEqual(fld._schema.default, 0)
 
 
 class TestCollection(TestCase):
@@ -33,9 +33,11 @@ class TestCollection(TestCase):
             Field('x', int),
             Index('x'))
         self.metadata.bind(self.db)
+        self.db.mydoc.with_options.return_value = self.db.mydoc
 
     def test_can_find(self):
-        self.db.mydoc.find.return_value = iter([{'_id': 0, 'x': 5}])
+        self.db.mydoc.find.return_value = iter([
+            self.MyDoc({'_id': 0, 'x': 5})])
         spec = {'a': {'$exists': True}}
         curs = self.MyDoc.m.find(spec)
         self.db.mydoc.find.assert_called_with(spec)
