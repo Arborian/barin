@@ -14,7 +14,12 @@ class Clause(dict):
 
 
 def not_(value):
-    return Clause({'$not': value})
+    result = {}
+    for k, v in value.items():
+        if not isinstance(v, dict):
+            v = {'$eq': v}
+        result[k] = {'$not': v}
+    return result
 
 
 def comment(value):

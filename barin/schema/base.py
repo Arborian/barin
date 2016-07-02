@@ -103,4 +103,8 @@ class Anything(Validator):
 
     def __init__(self, **kwargs):
         kwargs.setdefault('allow_none', True)
+        kwargs.setdefault('required', False)
         super(Anything, self).__init__(**kwargs)
+
+    def __getitem__(self, name):
+        return Anything()

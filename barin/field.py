@@ -63,7 +63,7 @@ class Field(object):
         except KeyError:
             return Field(subname, S.Anything())
         if isinstance(subfield, Field):
-            return Field(subname, subfield.schema)
+            return Field(subname, subfield._schema)
         elif isinstance(subfield, S.Validator):
             return Field(subname, subfield)
         else:
