@@ -40,12 +40,15 @@ def _logical_nary_op(op):
 def and_(*parts):
     """Try to build a compound document without using $and."""
     result = {}
+    or_clauses = []
     for part in parts:
         if not isinstance(part, dict):
             raise errors.QueryError(
                 'Illegal $and clause: {}'.format(part))
         for k, v in part.items():
-            if isinstance(v, dict):
+            if k == '$or':
+                or_clauses.append({k: v})
+            elif isinstance(v, dict):
                 r_v = result.setdefault(k, {})
                 if not isinstance(r_v, dict):
                     r_v = result[k] = {'$eq': r_v}
@@ -60,6 +63,8 @@ def and_(*parts):
                         k, result[k], v))
             else:
                 result[k] = v
+    if or_clauses:
+        result = {'$and': [result] + or_clauses}
     return result
 
 # and_ = _logical_nary_op('$and')
