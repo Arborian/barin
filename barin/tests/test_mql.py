@@ -122,12 +122,12 @@ class TestMQL(TestCase):
 
     def test_not(self):
         self.assertEqual(
-            {'$not': {'x': {'$gt': 5}}},
+            {'x': {'$not': {'$gt': 5}}},
             mql.not_(self.MyDoc.x > 5))
 
     def test_not_op(self):
         self.assertEqual(
-            {'$not': {'x': {'$gt': 5}}},
+            {'x': {'$not': {'$gt': 5}}},
             ~(self.MyDoc.x > 5))
 
     def test_comment(self):

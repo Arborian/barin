@@ -66,6 +66,17 @@ class Unicode(Scalar):
         return value
 
 
+class Binary(Scalar):
+    _msgs = dict(
+        Scalar._msgs,
+        not_binary='Value must be a bson.Binary object')
+
+    def _validate(self, value, state=None):
+        if not isinstance(value, bson.Binary):
+            raise Invalid(self._msgs['not_binary'], value)
+        return value
+
+
 class DateTime(Scalar):
     _msgs = dict(
         Scalar._msgs,

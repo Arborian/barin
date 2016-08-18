@@ -10,7 +10,7 @@ class Manager(object):
 
     def __init__(self, metadata, name, fields, **options):
         self.metadata = metadata
-        self._name = name
+        self.name = name
         self.fields = fields
         self.options = options
         self._class_managers = {}
@@ -93,7 +93,6 @@ class CollectionManager(Manager):
         super(CollectionManager, self).__init__(
             metadata, cname, fields, **options)
         self.indexes = indexes
-        self._db = None
 
     def __get__(self, obj, cls=None):
         class_manager = ClassCollectionManager(self, cls)
@@ -106,10 +105,11 @@ class CollectionManager(Manager):
     def collection(self):
         if self._db is None:
             return None
-        return getattr(self._db, self._name)
+        return getattr(self._db, self.name)
 
-    def bind(self, db):
-        self._db = db
+    @property
+    def _db(self):
+        return self.metadata.db
 
     def __dir__(self):
         return dir(self.collection) + self.__dict__.keys()
