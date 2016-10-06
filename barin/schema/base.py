@@ -57,7 +57,8 @@ class Validator(object):
             self,
             allow_none=Missing,
             default=Missing,
-            required=True):
+            required=True,
+            **extra):
         self.default = default
         self.required = required
         if allow_none is Missing:
@@ -67,6 +68,7 @@ class Validator(object):
                 self.allow_none = False
         else:
             self.allow_none = allow_none
+        self.extra = extra
 
     def __repr__(self):
         parts = [self.__class__.__name__]
