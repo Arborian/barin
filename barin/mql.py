@@ -39,7 +39,7 @@ def _logical_nary_op(op):
 
 def and_(*parts):
     """Try to build a compound document without using $and."""
-    result = {}
+    result = Clause()
     or_clauses = []
     for part in parts:
         if not isinstance(part, dict):

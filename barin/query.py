@@ -124,6 +124,12 @@ class Aggregate(_CursorSource):
         stage = {op: value}
         return Aggregate(self._mgr, self.pipeline + [stage])
 
+    @property
+    def current(self):
+        return _AggCurrent()
+
+    c = current
+
     project = partialmethod(_append, '$project')
     match = partialmethod(_append, '$match')
     limit = partialmethod(_append, '$limit')
@@ -150,3 +156,70 @@ class Aggregate(_CursorSource):
             if stage.keys()[0] in self.OPS_MODIFYING_DOC_STRUCTURE:
                 return pymongo_cursor
         return Cursor(self._mgr, pymongo_cursor)
+
+
+class _AggCurrent(object):
+
+    def __getitem__(self, name):
+        return _AggName('$' + name)
+
+    def __getattr__(self, name):
+        return self[name]
+
+
+class _AggName(unicode):
+
+    def __init__(self, name):
+        super(_AggName, self).__init__(name)
+
+    def __getitem__(self, name):
+        return _AggName(unicode(self) + '.' + name)
+
+    def __getattr__(self, name):
+        return self[name]
+
+    def _unop(self, op):
+        return _AggOp(op, self)
+
+    def _binop(self, op, other):
+        return _AggOp(op, self, other)
+
+    def _rbinop(self, op, other):
+        return _AggOp(op, other, self)
+
+    __abs__ = partialmethod(_unop, '$abs')
+    __add__ = partialmethod(_binop, '$add')
+    __sub__ = partialmethod(_binop, '$subtract')
+    __mul__ = partialmethod(_binop, '$multiply')
+    __div__ = partialmethod(_binop, '$divide')
+    __mod__ = partialmethod(_binop, '$mod')
+    __pow__ = partialmethod(_binop, '$pow')
+    __radd__ = partialmethod(_rbinop, '$add')
+    __rsub__ = partialmethod(_rbinop, '$subtract')
+    __rmul__ = partialmethod(_rbinop, '$multiply')
+    __rdiv__ = partialmethod(_rbinop, '$divide')
+    __rmod__ = partialmethod(_rbinop, '$mod')
+    __rpow__ = partialmethod(_rbinop, '$pow')
+
+    ceil = partialmethod(_unop, '$ceil')
+    exp = partialmethod(_unop, '$exp')
+    floor = partialmethod(_unop, '$floor')
+    ln = partialmethod(_unop, '$ln')
+    log = partialmethod(_binop, '$ln')
+    log10 = partialmethod(_unop, '$log10')
+    sqrt = partialmethod(_unop, '$sqrt')
+    trunc = partialmethod(_unop, '$trunc')
+
+    concat = partialmethod(_binop, '$concat')
+    lower = partialmethod(_unop, '$toLower')
+    upper = partialmethod(_unop, '$toUpper')
+    strcasecmp = partialmethod(_binop, '$strcasecmp')
+
+    def substr(self, start, length):
+        return _AggOp('$substr', self, start, length)
+
+
+class _AggOp(dict):
+
+    def __init__(self, op, *args):
+        super(_AggOp, self).__init__({op: list(args)})
