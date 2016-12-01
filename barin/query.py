@@ -40,8 +40,8 @@ class Query(_CursorSource):
         self._wrap_mgr('update_one')
         self._wrap_mgr('update_many')
         self._wrap_mgr('replace_one')
-        self._wrap_mgr('remove_one')
-        self._wrap_mgr('remove_many')
+        self._wrap_mgr('delete_one')
+        self._wrap_mgr('delete_many')
         self._wrap_mgr('find_one_and_update')
         self._wrap_mgr('find_one_and_replace')
         self._wrap_mgr('find_one_and_delete')
@@ -134,7 +134,6 @@ class Aggregate(_CursorSource):
     match = partialmethod(_append, '$match')
     limit = partialmethod(_append, '$limit')
     skip = partialmethod(_append, '$skip')
-    sort = partialmethod(_append, '$sort')
     geo_near = partialmethod(_append, '$geoNear')
     redact = partialmethod(_append, '$redact')
     unwind = partialmethod(_append, '$unwind')
@@ -142,6 +141,14 @@ class Aggregate(_CursorSource):
     sample = partialmethod(_append, '$sample')
     lookup = partialmethod(_append, '$lookup')
     index_stats = partialmethod(_append, '$indexStats')
+
+    def sort(self, key_or_list, direction=1):
+        if isinstance(key_or_list, basestring):
+            sval = [(key_or_list, direction)]
+        else:
+            sval = key_or_list
+        stage = {'$sort': sval}
+        return Aggregate(self._mgr, self.pipeline + [stage])
 
     def out(self, collection_name):
         pipeline = self.pipeline + [{'$out': collection_name}]
