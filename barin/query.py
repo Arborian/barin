@@ -17,7 +17,10 @@ class _CursorSource(object):
         return list(self)
 
     def first(self):
-        return iter(self).next()
+        try:
+            return iter(self).next()
+        except StopIteration:
+            return None
 
     def one(self):
         it = iter(self)
