@@ -171,8 +171,9 @@ class InstanceCollectionManager(InstanceManager):
     def insert(self):
         return self._class_manager.insert_one(self._obj)
 
-    def remove(self):
-        return self._class_manager.remove({'_id': self._obj._id})
+    def delete(self):
+        return self._class_manager.delete_one(
+            {'_id': self._obj._id})
 
     def replace(self, **kwargs):
         return self._class_manager.replace_one(
