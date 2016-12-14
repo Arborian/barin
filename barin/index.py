@@ -10,3 +10,6 @@ class Index(object):
             else:
                 self.arg.append(a)
         self.options = options
+
+    def create(self, collection):
+        return collection.create_index(self.arg, **self.options)
