@@ -187,8 +187,12 @@ class InstanceCollectionManager(InstanceManager):
                 update_spec,
                 return_document=pymongo.ReturnDocument.AFTER,
                 **kwargs)
-            self._obj.clear()
-            self._obj.update(obj)
+            if obj:
+                self._obj.clear()
+                self._obj.update(obj)
+            else:
+                # Object has been deleted
+                return None
         else:
             return self._class_manager.update_one(
                 {'_id': self._obj._id},
