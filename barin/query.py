@@ -1,5 +1,7 @@
 from itertools import chain
 
+import six
+
 from .base import partialmethod
 from .cursor import Cursor
 from . import mql
@@ -177,13 +179,13 @@ class _AggCurrent(object):
         return self[name]
 
 
-class _AggName(unicode):
+class _AggName(six.text_type):
 
     def __init__(self, name):
         super(_AggName, self).__init__(name)
 
     def __getitem__(self, name):
-        return _AggName(unicode(self) + '.' + name)
+        return _AggName(six.text_type(self) + '.' + name)
 
     def __getattr__(self, name):
         return self[name]
