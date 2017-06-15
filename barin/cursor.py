@@ -16,6 +16,7 @@ class Cursor(object):
     def next(self):
         obj = self.pymongo_cursor.next()
         return self._manager.validate(obj)
+    __next__ = next
 
     def all(self):
         return list(self)

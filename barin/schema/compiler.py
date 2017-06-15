@@ -1,5 +1,6 @@
 """Shorthand compiler for schemas."""
 from datetime import datetime
+import six
 
 
 def compile_schema(metadata, s, **options):
@@ -9,7 +10,7 @@ def compile_schema(metadata, s, **options):
         return S.Anything()
     if isinstance(s, S.Validator):
         return s
-    elif isinstance(s, basestring):
+    elif isinstance(s, six.string_types):
         return metadata[s].__barin__
     elif hasattr(s, '__barin__'):
         return s.__barin__
@@ -34,13 +35,15 @@ def compile_schema(metadata, s, **options):
             **options)
     elif not isinstance(s, type):
         raise S.Invalid('Invalid schema {}'.format(s), s)
-    elif issubclass(s, (int, long)):
+    elif issubclass(s, S.Validator):
+        return s(**options)
+    elif issubclass(s, six.integer_types):
         return S.Integer(**options)
     elif issubclass(s, datetime):
         return S.DateTime(**options)
     elif issubclass(s, float):
         return S.Float(**options)
-    elif issubclass(s, basestring):
+    elif issubclass(s, six.string_types):
         return S.Unicode(**options)
     else:
         raise S.Invalid('Invalid schema {}'.format(s), s)

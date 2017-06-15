@@ -1,4 +1,6 @@
 """Schemas for compound types (Documents and Arrays)."""
+import six
+
 from barin.base import Document as BaseDocument
 from barin.schema.base import Validator, Invalid, Missing
 
@@ -103,7 +105,7 @@ class Array(Validator):
     def _validate_indices(self, length):
         seen = set()
         for sl in self.only_validate:
-            indices = xrange(*sl.indices(length))
+            indices = six.moves.range(*sl.indices(length))
             for ix in indices:
                 if ix in seen:
                     continue

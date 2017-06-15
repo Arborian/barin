@@ -1,7 +1,8 @@
 """Schemas for simple BSON types."""
-import pytz
 from datetime import datetime
 
+import six
+import pytz
 import bson
 
 from .base import Validator, Invalid
@@ -28,7 +29,7 @@ class Number(Scalar):
         not_num='Value must be an number')
 
     def _validate(self, value, state=None):
-        if not isinstance(value, (int, long, float)):
+        if not isinstance(value, (six.integer_types, float)):
             raise Invalid(self._msgs['not_num'], value)
         return value
 
@@ -40,7 +41,7 @@ class Integer(Number):
 
     def _validate(self, value, state=None):
         value = super(Integer, self)._validate(value, state)
-        if not isinstance(value, (int, long)):
+        if not isinstance(value, six.integer_types):
             raise Invalid(self._msgs['not_int'], value)
         return value
 
@@ -61,7 +62,7 @@ class Unicode(Scalar):
         not_unicode='Value must be a Unicode string')
 
     def _validate(self, value, state=None):
-        if not isinstance(value, unicode):
+        if not isinstance(value, six.string_types):
             raise Invalid(self._msgs['not_unicode'], value)
         return value
 

@@ -94,7 +94,7 @@ class Query(_CursorSource):
         skips = []
         sorts = []
         for stage in self.pipeline:
-            op, value = stage.items()[0]
+            op, value = list(stage.items())[0]
             if op == '$match':
                 filters.append(value)
             elif op == '$limit':
