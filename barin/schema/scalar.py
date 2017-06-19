@@ -70,10 +70,12 @@ class Unicode(Scalar):
 class Binary(Scalar):
     _msgs = dict(
         Scalar._msgs,
-        not_binary='Value must be a bson.Binary object')
+        not_binary='Value must be a bson.Binary or bytes object')
 
     def _validate(self, value, state=None):
-        if not isinstance(value, bson.Binary):
+        try:
+            return bson.Binary(value)
+        except TypeError as err:
             raise Invalid(self._msgs['not_binary'], value)
         return value
 
