@@ -65,7 +65,7 @@ class Query(_CursorSource):
         return self._mgr.find(**self._compile_query())
 
     def sort(self, key_or_list, direction=1):
-        if isinstance(key_or_list, basestring):
+        if isinstance(key_or_list, six.string_types):
             sval = [(key_or_list, direction)]
         else:
             sval = key_or_list
@@ -148,7 +148,7 @@ class Aggregate(_CursorSource):
     index_stats = partialmethod(_append, '$indexStats')
 
     def sort(self, key_or_list, direction=1):
-        if isinstance(key_or_list, basestring):
+        if isinstance(key_or_list, six.string_types):
             sval = [(key_or_list, direction)]
         else:
             sval = key_or_list
