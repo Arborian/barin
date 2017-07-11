@@ -106,7 +106,7 @@ class Query(_CursorSource):
         result = dict(
             filter=mql.and_(*filters))
         if limits:
-            result['limit'] = max(limits)
+            result['limit'] = min(limits)
         if skips:
             result['skip'] = sum(skips)
         if sorts:
