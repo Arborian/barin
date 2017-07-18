@@ -1,7 +1,12 @@
+from collections import namedtuple
+
 from . import mql
 from . import schema as S
 from .base import Document, partialmethod
 from .util import reify
+
+
+backref = namedtuple('backref', 'cname fname')
 
 
 class FieldCollection(Document):
@@ -29,6 +34,7 @@ class Field(object):
         self._name = name
         self._orig_schema = schema
         self._options = options
+        self.backref = options.pop('backref', None)
         self._metadata = None
 
     def bind_metadata(self, metadata):
