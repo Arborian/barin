@@ -63,6 +63,7 @@ class Field(object):
         return self[name]
 
     def __getitem__(self, name):
+        from barin import manager
         subname = '{}.{}'.format(self._name, name)
         try:
             subfield = self._schema[name]
@@ -71,6 +72,8 @@ class Field(object):
         if isinstance(subfield, Field):
             return Field(subname, subfield._schema)
         elif isinstance(subfield, S.Validator):
+            return Field(subname, subfield)
+        elif isinstance(subfield, manager.ClassManager):
             return Field(subname, subfield)
         else:
             raise KeyError(name)
