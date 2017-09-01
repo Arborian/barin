@@ -93,7 +93,7 @@ def subdocument(metadata, name, *args, **options):
             raise errors.SchemaError('Unknown argument type {}'.format(arg))
     fields = field.FieldCollection(fields)
     fields.bind_metadata(metadata)
-    mgr = manager.Manager(metadata, name, **options)
+    mgr = manager.BaseManager(metadata, name, **options)
     dct = dict(m=mgr, __barin__=mgr, **fields)
     cls = type(name, (base.Document,), dct)
     mgr.registry.register(cls, fields)

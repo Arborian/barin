@@ -33,6 +33,9 @@ class _CursorSource(object):
             return res
         raise ValueError('More than one result returned for one()')
 
+    def count(self):
+        return self.get_cursor().count()
+
 
 class Query(_CursorSource):
 
