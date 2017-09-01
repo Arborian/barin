@@ -6,6 +6,10 @@ class Cursor(object):
         self._wrap_cursor('sort')
         self._wrap_cursor('skip')
         self._wrap_cursor('limit')
+        if manager.polymorphic_discriminator:
+            self._validate = self._validate_polymorphic
+        else:
+            self._validate = self._manager.validate
 
     def __getattr__(self, name):
         return getattr(self.pymongo_cursor, name)
@@ -13,10 +17,15 @@ class Cursor(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def _validate_polymorphic(self, obj):
+        reg = self._manager.registry.by_value(obj)
+        vobj = reg.schema.validate(obj)
+        return reg.cls(vobj)
+
+    def __next__(self):
         obj = next(self.pymongo_cursor)
-        return self._manager.validate(obj)
-    __next__ = next
+        return self._validate(obj)
+    next = __next__
 
     def all(self):
         return list(self)
