@@ -1,6 +1,12 @@
 from functools import update_wrapper
 
 
+class _NoDefault(object):
+    pass
+
+NoDefault = _NoDefault()
+
+
 def reify(func):
     result = _Reified(func)
     update_wrapper(result, func)

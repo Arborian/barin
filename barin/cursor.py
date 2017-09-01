@@ -14,7 +14,7 @@ class Cursor(object):
         return self
 
     def next(self):
-        obj = self.pymongo_cursor.next()
+        obj = next(self.pymongo_cursor)
         return self._manager.validate(obj)
     __next__ = next
 
@@ -22,13 +22,13 @@ class Cursor(object):
         return list(self)
 
     def first(self):
-        return iter(self).next()
+        return next(iter(self))
 
     def one(self):
         it = iter(self)
-        res = it.next()
+        res = next(it)
         try:
-            it.next()
+            next(it)
         except StopIteration:
             return res
         raise ValueError('More than one result returned for one()')

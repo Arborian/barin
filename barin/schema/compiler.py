@@ -14,7 +14,9 @@ def compile_schema(metadata, s, **options):
         return metadata[s].__barin__
     elif hasattr(s, '__barin__'):
         return s.__barin__
-    elif isinstance(s, manager.ClassManager):
+    elif isinstance(s, manager.Manager):
+        return s
+    elif isinstance(s, manager.poly.ClassManager):
         return s
     elif isinstance(s, list):
         if len(s) == 1:

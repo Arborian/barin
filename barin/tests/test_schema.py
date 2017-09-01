@@ -135,7 +135,7 @@ class TestUnicode(TestCase):
     def test_uni_fail(self):
         s = S.Unicode()
         with self.assertRaises(S.Invalid):
-            s.validate('5')
+            s.validate(b'5')
 
 
 class TestDocument(TestCase):
@@ -170,7 +170,7 @@ class TestDocument(TestCase):
         val = {'x': 1, 'y': 'foo'}
         with self.assertRaises(S.Invalid) as err:
             s.validate(val)
-        self.assertEqual(err.exception.document.keys(), ['y'])
+        self.assertEqual(list(err.exception.document), ['y'])
 
 
 class TestArray(TestCase):

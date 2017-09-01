@@ -20,15 +20,15 @@ class _CursorSource(object):
 
     def first(self):
         try:
-            return iter(self).next()
+            return next(iter(self))
         except StopIteration:
             return None
 
     def one(self):
         it = iter(self)
-        res = it.next()
+        res = next(it)
         try:
-            it.next()
+            next(it)
         except StopIteration:
             return res
         raise ValueError('More than one result returned for one()')
