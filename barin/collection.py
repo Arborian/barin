@@ -1,4 +1,4 @@
-from collections import defaultdict
+from itertools import chain
 
 from . import base
 from . import manager
@@ -11,44 +11,6 @@ class Collection(base.Document):
     pass
 
 
-class Metadata(object):
-
-    def __init__(self, db=None):
-        self.collections = []
-        self._classes_full = {}
-        self._classes_short = defaultdict(list)
-        self.db = db
-
-    def __getitem__(self, index):
-        try:
-            return self._classes_full[index]
-        except KeyError:
-            pass
-        classes = self._classes_short.get(index, [])
-        if len(classes) == 1:
-            return classes[0]
-        elif len(classes) > 1:
-            options = map(repr, classes)
-            raise ValueError(
-                'Ambiguous classname, could be any of: [%s]',
-                ', '.join(options))
-        else:
-            raise KeyError(index)
-
-    def register(self, cls):
-        if issubclass(cls, Collection):
-            self.collections.append(cls)
-        k = cls.__module__ + '.' + cls.__name__
-        self._classes_full[k] = cls
-        self._classes_short[cls.__name__].append(cls)
-
-    def bind(self, db):
-        self.db = db
-
-    def cref(self, name):
-        return CollectionRef(self, name)
-
-
 class CollectionRef(object):
 
     def __init__(self, metadata, name):
@@ -58,6 +20,9 @@ class CollectionRef(object):
     def __getattr__(self, name):
         actual = self._metadata[self._name]
         return getattr(actual, name)
+
+    def __dir__(self):
+        return dir(self._metadata[self._name]) + list(self.__dict__.keys())
 
 
 def collection(metadata, cname, *args, **options):
@@ -73,11 +38,12 @@ def collection(metadata, cname, *args, **options):
     fields = field.FieldCollection(fields)
     fields.bind_metadata(metadata)
     mgr = manager.CollectionManager(
-        metadata, cname, fields, indexes, **options)
+        metadata, cname, indexes, **options)
     dct = dict(m=mgr, __barin__=mgr, **fields)
-    res = type(cname, (Collection,), dct)
-    metadata.register(res)
-    return res
+    cls = type(cname, (Collection,), dct)
+    mgr.registry.register(cls, fields)
+    metadata.register(cls)
+    return cls
 
 
 def subdocument(metadata, name, *args, **options):
@@ -85,12 +51,50 @@ def subdocument(metadata, name, *args, **options):
     for arg in args:
         if isinstance(arg, field.Field):
             fields.append(arg)
+        elif isinstance(arg, index.Index):
+            raise errors.SchemaError('Indexes must only occur on base collections')
         else:
             raise errors.SchemaError('Unknown argument type {}'.format(arg))
     fields = field.FieldCollection(fields)
     fields.bind_metadata(metadata)
-    mgr = manager.Manager(metadata, name, fields, **options)
+    mgr = manager.BaseManager(metadata, name, **options)
     dct = dict(m=mgr, __barin__=mgr, **fields)
-    res = type(name, (base.Document,), dct)
-    metadata.register(res)
-    return res
+    cls = type(name, (base.Document,), dct)
+    mgr.registry.register(cls, fields)
+    metadata.register(cls)
+    return cls
+
+
+def derived(parent, discriminator, *args, **options):
+    mgr = parent.m.manager
+    fields = [
+        field.Field(
+            mgr.registry.polymorphic_discriminator,
+            str, default=discriminator)]
+    for arg in args:
+        if isinstance(arg, field.Field):
+            fields.append(arg)
+        elif isinstance(arg, index.Index):
+            raise errors.SchemaError(
+                'Indexes must only occur on base collections')
+        else:
+            raise errors.SchemaError('Unknown argument type {}'.format(arg))
+    base_fields = mgr.registry.default.fields.values()
+    fields = field.FieldCollection(chain(base_fields, fields))
+    fields.bind_metadata(mgr.metadata)
+    dct = dict(m=mgr, __barin__=mgr, **fields)
+    name = '{}[{}={}]'.format(
+        mgr.name, mgr.registry.polymorphic_discriminator, discriminator)
+    cls = type(name,  (parent,), dct)
+    mgr.registry.register(cls, fields, discriminator)
+    return cls
+
+
+def cmap(collection):
+    '''decorator that marks a class as providing behavior for a collection'''
+    def decorator(cls):
+        mapped_cls = type(
+            cls.__name__, (cls, collection), {})
+        collection.m.registry.register_override(collection, mapped_cls)
+        return mapped_cls
+    return decorator

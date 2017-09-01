@@ -16,7 +16,7 @@ class FieldCollection(Document):
             (f._name, f) for f in fields)
 
     def make_schema(self, metadata, **options):
-        d_schema = dict((name, f._schema) for name, f in self.items())
+        d_schema = {name: f._schema for name, f in self.items()}
         s_schema = S.compile_schema(metadata, d_schema, **options)
         return s_schema
 
@@ -49,7 +49,7 @@ class Field(object):
             self._metadata, self._orig_schema, **self._options)
 
     def __repr__(self):
-        return '<Field {}: {}>'.format(self._name, self._schema)
+        return '<Field {}: {}>'.format(self._name, self._orig_schema)
 
     def __get__(self, inst, cls=None):
         if inst is None:
@@ -77,6 +77,13 @@ class Field(object):
             return Field(subname, subfield)
         else:
             raise KeyError(name)
+
+    # Sort operators
+    def __pos__(self):
+        return (self._name, 1)
+
+    def __neg__(self):
+        return (self._name, -1)
 
     # Update operators
     def _uop(self, op, value):

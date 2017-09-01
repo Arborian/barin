@@ -20,18 +20,21 @@ class _CursorSource(object):
 
     def first(self):
         try:
-            return iter(self).next()
+            return next(iter(self))
         except StopIteration:
             return None
 
     def one(self):
         it = iter(self)
-        res = it.next()
+        res = next(it)
         try:
-            it.next()
+            next(it)
         except StopIteration:
             return res
         raise ValueError('More than one result returned for one()')
+
+    def count(self):
+        return self.get_cursor().count()
 
 
 class Query(_CursorSource):
@@ -76,13 +79,14 @@ class Query(_CursorSource):
         def wrapper(*args, **kwargs):
             orig = getattr(self._mgr, name)
             qres = self._compile_query()
-            res = orig(qres['filter'], *args, **kwargs)
+            if 'sort' in qres:
+                res = orig(qres['filter'], sort=qres['sort'], *args, **kwargs)
+            else:
+                res = orig(qres['filter'], *args, **kwargs)
             if 'limit' in qres:
                 res = res.limit(qres['limit'])
             if 'skip' in qres:
                 res = res.skip(qres['skip'])
-            if 'sort' in qres:
-                res = res.sort(qres['sort'])
             return res
         wrapper.__name__ = 'wrapped_{}'.format(name)
         setattr(self, name, wrapper)
@@ -110,7 +114,7 @@ class Query(_CursorSource):
         if skips:
             result['skip'] = sum(skips)
         if sorts:
-            result['sort'] = list(chain(*sorts))
+            result['sort'] = list(sorts)
         return result
 
 

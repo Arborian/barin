@@ -4,7 +4,7 @@ from mock import Mock
 
 import pymongo
 
-from barin import collection, Metadata, Field, Index
+from barin import collection, subdocument, Metadata, Field, Index
 from barin import schema as S
 
 
@@ -45,9 +45,9 @@ class TestCollection(TestCase):
         self.assertIsInstance(doc, self.MyDoc)
 
     def test_can_insert(self):
-        doc = self.MyDoc(x=5)
+        doc = self.MyDoc(_id=0, x=5)
         doc.m.insert()
-        self.db.mydoc.insert_one.assert_called_with({'x': 5})
+        self.db.mydoc.insert_one.assert_called_with({'_id': 0, 'x': 5})
 
     def test_can_update_with_refresh(self):
         doc = self.MyDoc(_id=1, x=5)
@@ -69,11 +69,49 @@ class TestCollection(TestCase):
         self.assertEqual(doc.x, 5)
 
 
+class TestSubdocSchemaCreation(TestCase):
+
+    def test_can_make_schema(self):
+        metadata = Metadata()
+        subdoc = subdocument(metadata, 'subdoc',
+            Field('x', int))
+        self.MyDoc = collection(
+            metadata, 'mydoc',
+            Field('x', subdoc),
+            Field('y', [subdoc]))
+
+
+class TestSubdocSchema(TestCase):
+
+    def setUp(self):
+        metadata = Metadata()
+        subdoc = S.compile_schema(metadata, {'x': int})
+        self.MyDoc = collection(
+            metadata, 'mydoc',
+            Field('x', subdoc),
+            Field('y', [subdoc]))
+        self.doc = self.MyDoc.m.create(x=dict(x=5), y=[])
+
+    def test_can_access(self):
+        self.assertEqual(5, self.doc.x.x)
+
+    def test_dotted_document(self):
+        self.assertEqual(
+            {'x.x': 5},
+            self.MyDoc.x.x == 5)
+
+    def test_dotted_array(self):
+        self.assertEqual(
+            {'y.0': 5},
+            self.MyDoc.y[0] == 5)
+
+
 class TestSubdoc(TestCase):
 
         def setUp(self):
             metadata = Metadata()
-            subdoc = S.compile_schema(metadata, {'x': int})
+            subdoc = subdocument(metadata, 'subdoc',
+                Field('x', int))
             self.MyDoc = collection(
                 metadata, 'mydoc',
                 Field('x', subdoc),

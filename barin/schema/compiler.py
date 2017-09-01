@@ -5,7 +5,6 @@ import six
 
 def compile_schema(metadata, s, **options):
     from barin import schema as S
-    from barin import manager
     if s is None:
         return S.Anything()
     if isinstance(s, S.Validator):
@@ -13,9 +12,7 @@ def compile_schema(metadata, s, **options):
     elif isinstance(s, six.string_types):
         return metadata[s].__barin__
     elif hasattr(s, '__barin__'):
-        return s.__barin__
-    elif isinstance(s, manager.ClassManager):
-        return s
+        return compile_schema(metadata, s.__barin__, **options)
     elif isinstance(s, list):
         if len(s) == 1:
             schema = compile_schema(metadata, s[0])
@@ -34,7 +31,10 @@ def compile_schema(metadata, s, **options):
             extra_validator=extra_validator,
             **options)
     elif not isinstance(s, type):
-        raise S.Invalid('Invalid schema {}'.format(s), s)
+        if hasattr(s, 'schema'):
+            return s.schema
+        else:
+            raise S.Invalid('Invalid schema {}'.format(s), s)
     elif issubclass(s, S.Validator):
         return s(**options)
     elif issubclass(s, six.integer_types):
