@@ -46,7 +46,4 @@ class PolymorphicAdapter(object):
     def __call__(self, obj, state=None):
         reg = self.registry.by_value(obj)
         vobj = reg.schema.validate(obj, state)
-        if not isinstance(vobj, self.cls):
-            import ipdb; ipdb.set_trace();
-            vobj = self.cls(vobj)
         return vobj
