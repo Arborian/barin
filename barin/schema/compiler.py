@@ -12,7 +12,7 @@ def compile_schema(metadata, s, **options):
     elif isinstance(s, six.string_types):
         return metadata[s].__barin__
     elif hasattr(s, '__barin__'):
-        return s.__barin__
+        return compile_schema(metadata, s.__barin__, **options)
     elif isinstance(s, list):
         if len(s) == 1:
             schema = compile_schema(metadata, s[0])
@@ -31,8 +31,8 @@ def compile_schema(metadata, s, **options):
             extra_validator=extra_validator,
             **options)
     elif not isinstance(s, type):
-        if hasattr(s, 'validate'):
-            return s
+        if hasattr(s, 'schema'):
+            return s.schema
         else:
             raise S.Invalid('Invalid schema {}'.format(s), s)
     elif issubclass(s, S.Validator):

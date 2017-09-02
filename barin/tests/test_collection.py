@@ -69,29 +69,41 @@ class TestCollection(TestCase):
         self.assertEqual(doc.x, 5)
 
 
+class TestSubdocSchemaCreation(TestCase):
+
+    def test_can_make_schema(self):
+        metadata = Metadata()
+        subdoc = subdocument(metadata, 'subdoc',
+            Field('x', int))
+        self.MyDoc = collection(
+            metadata, 'mydoc',
+            Field('x', subdoc),
+            Field('y', [subdoc]))
+
+
 class TestSubdocSchema(TestCase):
 
-        def setUp(self):
-            metadata = Metadata()
-            subdoc = S.compile_schema(metadata, {'x': int})
-            self.MyDoc = collection(
-                metadata, 'mydoc',
-                Field('x', subdoc),
-                Field('y', [subdoc]))
-            self.doc = self.MyDoc.m.create(x=dict(x=5), y=[])
+    def setUp(self):
+        metadata = Metadata()
+        subdoc = S.compile_schema(metadata, {'x': int})
+        self.MyDoc = collection(
+            metadata, 'mydoc',
+            Field('x', subdoc),
+            Field('y', [subdoc]))
+        self.doc = self.MyDoc.m.create(x=dict(x=5), y=[])
 
-        def test_can_access(self):
-            self.assertEqual(5, self.doc.x.x)
+    def test_can_access(self):
+        self.assertEqual(5, self.doc.x.x)
 
-        def test_dotted_document(self):
-            self.assertEqual(
-                {'x.x': 5},
-                self.MyDoc.x.x == 5)
+    def test_dotted_document(self):
+        self.assertEqual(
+            {'x.x': 5},
+            self.MyDoc.x.x == 5)
 
-        def test_dotted_array(self):
-            self.assertEqual(
-                {'y.0': 5},
-                self.MyDoc.y[0] == 5)
+    def test_dotted_array(self):
+        self.assertEqual(
+            {'y.0': 5},
+            self.MyDoc.y[0] == 5)
 
 
 class TestSubdoc(TestCase):

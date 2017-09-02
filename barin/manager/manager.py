@@ -17,6 +17,9 @@ class BaseManager(object):
         self.registry = poly.Registry(
             self, options.pop('polymorphic_discriminator', None))
 
+    def __repr__(self):
+        return '<{} {}>'.format(self.__class__.__name__, name)
+
     def __get__(self, obj, cls=None):
         if cls is None:
             cls = type(obj)

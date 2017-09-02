@@ -1,17 +1,19 @@
 from barin import cursor
 from barin import query
+from barin.adapter import adapter
 
 
 class ClassManager(object):
 
     def __init__(self, reg, cls):
         self._reg = reg
-        self._cls = cls
+        self.cls = cls
         self._wrap_cursor('find')
         self._wrap_single('find_one')
         self._wrap_single('find_one_and_update')
         self._wrap_single('find_one_and_replace')
         self._wrap_single('find_one_and_delete')
+        self.adapter = adapter(self)
         self.query = query.Query(self)
         self.aggregate = query.Aggregate(self)
         if reg.spec:
@@ -19,7 +21,9 @@ class ClassManager(object):
             self.aggregate = self.aggregate.match(reg.spec)
 
     def __repr__(self):
-        return '<ClassManager for {}>'.format(self._cls.__name__)
+        return '<{} {}>'.format(
+            self.__class__.__name__,
+            self.cls.__name__)
 
     def __getattr__(self, name):
         return getattr(self._reg, name)
@@ -29,12 +33,8 @@ class ClassManager(object):
 
     def create(self, *args, **kwargs):
         """Create a (validated) document."""
-        val = dict(*args, **kwargs)
-        return self.validate(val)
-
-    def validate(self, value, state=None):
-        value = self.schema.validate(value, state)
-        return self._cls(value)
+        vobj = self.schema.validate(dict(*args, **kwargs))
+        return self.cls(vobj)
 
     def get(self, **kwargs):
         return self.find_one(kwargs)
@@ -43,10 +43,11 @@ class ClassManager(object):
         return self.find(kwargs)
 
     def insert_one(self, obj):
-        return self.collection.insert_one(obj)
+        return self.collection.insert_one(
+            self.adapter(obj))
 
     def insert_many(self, objs):
-        return self.collection.insert_many(objs)
+        return self.collection.insert_many(map(self.adapter, objs))
 
     def _wrap_cursor(self, name):
         def wrapper(*args, **kwargs):
@@ -63,7 +64,7 @@ class ClassManager(object):
             res = orig(*args, **kwargs)
             if res is None:
                 return res
-            return self.validate(res)
+            return self.adapter(res)
         wrapper.__name__ = 'wrapped_{}'.format(name)
         setattr(self, name, wrapper)
         return wrapper

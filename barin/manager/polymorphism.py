@@ -16,6 +16,10 @@ class Registry(object):
         if discriminator is NoDefault:
             self.default = reg
 
+    def register_override(self, collection, cls):
+        reg = self.by_class(collection)
+        reg.cls = cls
+
     def by_disc(self, discriminator):
         return self._by_disc.get(discriminator, self.default)
 
@@ -57,5 +61,5 @@ class Registration(object):
 
     @reify
     def schema(self):
-        return self.fields.make_schema(self.metadata)
+        return self.fields.make_schema(self.metadata, as_class=self.cls)
 
