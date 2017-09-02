@@ -20,6 +20,11 @@ class ClassManager(object):
             self.query = self.query.match(reg.spec)
             self.aggregate = self.aggregate.match(reg.spec)
 
+    def filtered_query(self, spec):
+        result = dict(spec)
+        result.update(self._reg.spec)
+        return result
+
     def __repr__(self):
         return '<{} {}>'.format(
             self.__class__.__name__,
