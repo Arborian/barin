@@ -62,4 +62,3 @@ class Registration(object):
     @reify
     def schema(self):
         return self.fields.make_schema(self.metadata, as_class=self.cls)
-

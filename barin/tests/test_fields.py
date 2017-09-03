@@ -1,7 +1,6 @@
 from unittest import TestCase
 
-from barin import field
-from barin import metadata
+from barin import field, metadata
 
 
 class TestFields(TestCase):

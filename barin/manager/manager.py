@@ -1,7 +1,9 @@
 import logging
 
+from barin import cursor
+
 from . import polymorphism as poly
-from .class_manager import ClassManager
+from .class_manager import ClassManager, CollectionClassManager
 from .instance_manager import InstanceManager
 
 
@@ -18,16 +20,20 @@ class BaseManager(object):
             self, options.pop('polymorphic_discriminator', None))
 
     def __repr__(self):
-        return '<{} {}>'.format(self.__class__.__name__, name)
+        return '<{} {}>'.format(self.__class__.__name__, self.name)
+
+    def class_manager(self, cls):
+        reg = self.registry.by_class(cls)
+        return ClassManager(reg, cls)
 
     def __get__(self, obj, cls=None):
         if cls is None:
             cls = type(obj)
-        reg = self.registry.by_class(cls)
+        cm = self.class_manager(cls)
         if obj is None:
-            return ClassManager(reg, cls)
+            return cm
         else:
-            return InstanceManager(reg, obj)
+            return InstanceManager(cm, obj)
 
     def __getitem__(self, name):
         return self.fields[name]
@@ -39,6 +45,10 @@ class CollectionManager(BaseManager):
         super(CollectionManager, self).__init__(
             metadata, cname, **options)
         self.indexes = indexes
+
+    def class_manager(self, cls):
+        reg = self.registry.by_class(cls)
+        return CollectionClassManager(reg, cls, self)
 
     @property
     def collection(self):

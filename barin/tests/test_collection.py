@@ -45,9 +45,9 @@ class TestCollection(TestCase):
         self.assertIsInstance(doc, self.MyDoc)
 
     def test_can_insert(self):
-        doc = self.MyDoc(x=5)
+        doc = self.MyDoc(_id=0, x=5)
         doc.m.insert()
-        self.db.mydoc.insert_one.assert_called_with({'x': 5})
+        self.db.mydoc.insert_one.assert_called_with({'_id': 0, 'x': 5})
 
     def test_can_update_with_refresh(self):
         doc = self.MyDoc(_id=1, x=5)

@@ -8,22 +8,7 @@ class ClassManager(object):
     def __init__(self, reg, cls):
         self._reg = reg
         self.cls = cls
-        self._wrap_cursor('find')
-        self._wrap_single('find_one')
-        self._wrap_single('find_one_and_update')
-        self._wrap_single('find_one_and_replace')
-        self._wrap_single('find_one_and_delete')
         self.adapter = adapter(self)
-        self.query = query.Query(self)
-        self.aggregate = query.Aggregate(self)
-        if reg.spec:
-            self.query = self.query.match(reg.spec)
-            self.aggregate = self.aggregate.match(reg.spec)
-
-    def filtered_query(self, spec):
-        result = dict(spec)
-        result.update(self._reg.spec)
-        return result
 
     def __repr__(self):
         return '<{} {}>'.format(
@@ -41,6 +26,47 @@ class ClassManager(object):
         vobj = self.schema.validate(dict(*args, **kwargs))
         return self.cls(vobj)
 
+
+class CollectionClassManager(ClassManager):
+
+    def __init__(self, reg, cls, collection_manager):
+        super(CollectionClassManager, self).__init__(reg, cls)
+        self.collection_manager = collection_manager
+        self.query = query.Query(self)
+        self.aggregate = query.Aggregate(self)
+        if reg.spec:
+            self.query = self.query.match(reg.spec)
+            self.aggregate = self.aggregate.match(reg.spec)
+
+    def filtered_query(self, spec):
+        result = dict(spec)
+        result.update(self._reg.spec)
+        return result
+
+    def _wrap_cursor(name):
+        def wrapper(self, *args, **kwargs):
+            orig = getattr(self.collection_manager.collection, name)
+            res = orig(*args, **kwargs)
+            return cursor.Cursor(self, res)
+        wrapper.__name__ = 'wrapped_{}'.format(name)
+        return wrapper
+
+    def _wrap_single(name):
+        def wrapper(self, *args, **kwargs):
+            orig = getattr(self.collection_manager.collection, name)
+            res = orig(*args, **kwargs)
+            if res is None:
+                return res
+            return self.adapter(res)
+        wrapper.__name__ = 'wrapped_{}'.format(name)
+        return wrapper
+
+    find = _wrap_cursor('find')
+    find_one = _wrap_single('find_one')
+    find_one_and_update = _wrap_single('find_one_and_update')
+    find_one_and_replace = _wrap_single('find_one_and_replace')
+    find_one_and_delete = _wrap_single('find_one_and_delete')
+
     def get(self, **kwargs):
         return self.find_one(kwargs)
 
@@ -48,30 +74,10 @@ class ClassManager(object):
         return self.find(kwargs)
 
     def insert_one(self, obj):
-        return self.collection.insert_one(
+        return self.collection_manager.insert_one(
             self.adapter(obj))
 
     def insert_many(self, objs):
-        return self.collection.insert_many(map(self.adapter, objs))
-
-    def _wrap_cursor(self, name):
-        def wrapper(*args, **kwargs):
-            orig = getattr(self.collection, name)
-            res = orig(*args, **kwargs)
-            return cursor.Cursor(self, res)
-        wrapper.__name__ = 'wrapped_{}'.format(name)
-        setattr(self, name, wrapper)
-        return wrapper
-
-    def _wrap_single(self, name):
-        def wrapper(*args, **kwargs):
-            orig = getattr(self.collection, name)
-            res = orig(*args, **kwargs)
-            if res is None:
-                return res
-            return self.adapter(res)
-        wrapper.__name__ = 'wrapped_{}'.format(name)
-        setattr(self, name, wrapper)
-        return wrapper
+        return self.collection_managerq.insert_many(map(self.adapter, objs))
 
 
