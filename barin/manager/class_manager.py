@@ -1,5 +1,6 @@
 from barin import cursor
 from barin import query
+from barin import event
 from barin.adapter import adapter
 
 
@@ -73,11 +74,11 @@ class CollectionClassManager(ClassManager):
     def find_by(self, **kwargs):
         return self.find(kwargs)
 
+    @event.with_hooks()
     def insert_one(self, obj):
         return self.collection_manager.insert_one(
             self.adapter(obj))
 
+    @event.with_hooks()
     def insert_many(self, objs):
-        return self.collection_managerq.insert_many(map(self.adapter, objs))
-
-
+        return self.collection_manager.insert_many(map(self.adapter, objs))

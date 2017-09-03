@@ -1,6 +1,5 @@
 import logging
-
-from barin import cursor
+from collections import defaultdict
 
 from . import polymorphism as poly
 from .class_manager import ClassManager, CollectionClassManager
@@ -18,6 +17,7 @@ class BaseManager(object):
         self.options = options
         self.registry = poly.Registry(
             self, options.pop('polymorphic_discriminator', None))
+        self.hooks = defaultdict(list)
 
     def __repr__(self):
         return '<{} {}>'.format(self.__class__.__name__, self.name)

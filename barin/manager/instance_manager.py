@@ -1,6 +1,7 @@
 import pymongo
 
 from barin import schema as S
+from barin import event
 
 
 # TODO: test backref logic
@@ -8,19 +9,19 @@ from barin import schema as S
 
 class InstanceManager(object):
 
-    def __init__(self, manager, obj):
+    def __init__(self, manager, instance):
         self._manager = manager
-        self._obj = obj
+        self.instance = instance
 
     def __getattr__(self, name):
         return getattr(self._manager, name)
 
     def synchronize(self, isdel=False):
         '''Sync all backrefs'''
-        _id = self._obj['_id']
+        _id = self.instance['_id']
         for fname, f in self.fields.items():
             if f.backref:
-                v = f.__get__(self._obj)
+                v = f.__get__(self.instance)
                 other_cls = self.metadata[f.backref.cname]
                 other_fld = other_cls.m.fields[f.backref.fname]
                 if isinstance(f._schema, S.Array):
@@ -34,34 +35,38 @@ class InstanceManager(object):
                     else:
                         self._sync_o2o(_id, f, v, other_cls, other_fld, isdel)
 
+    @event.with_hooks('insert')
     def insert(self):
-        return self._manager.insert_one(self._obj)
+        return self._manager.insert_one(self.instance)
 
+    @event.with_hooks('delete')
     def delete(self):
         return self._manager.delete_one(
-            {'_id': self._obj._id})
+            {'_id': self.instance._id})
 
+    @event.with_hooks('replace')
     def replace(self, **kwargs):
         return self._manager.replace_one(
-            {'_id': self._obj._id}, self._obj, **kwargs)
+            {'_id': self.instance._id}, self.instance, **kwargs)
 
+    @event.with_hooks('update')
     def update(self, update_spec, **kwargs):
         refresh = kwargs.pop('refresh', False)
         if refresh:
             obj = self._manager.find_one_and_update(
-                {'_id': self._obj._id},
+                {'_id': self.instance._id},
                 update_spec,
                 return_document=pymongo.ReturnDocument.AFTER,
                 **kwargs)
             if obj:
-                self._obj.clear()
-                self._obj.update(obj)
+                self.instance.clear()
+                self.instance.update(obj)
             else:
                 # Object has been deleted
                 return None
         else:
             return self._manager.update_one(
-                {'_id': self._obj._id},
+                {'_id': self.instance._id},
                 update_spec, **kwargs)
 
     def _sync_m2m(self, this_id, this_fld, this_val, other_cls, other_fld, isdel):

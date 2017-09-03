@@ -13,3 +13,5 @@ class TestSubdocumentManager(TestCase):
 
     def test_has_no_find(self):
         self.assertFalse(hasattr(self.Doc.m, 'find'))
+
+

@@ -95,4 +95,3 @@ def cmap(collection):
         collection.m.registry.register_override(collection, mapped_cls)
         return mapped_cls
     return decorator
-
