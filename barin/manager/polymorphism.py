@@ -65,6 +65,10 @@ class Registration(object):
     def __getitem__(self, name):
         return self.fields[name]
 
+    def make_schema(self, **options):
+        return self.fields.make_schema(
+            self.metadata, as_class=self.cls, **options)
+
     @reify
     def schema(self):
         return self.fields.make_schema(self.metadata, as_class=self.cls)

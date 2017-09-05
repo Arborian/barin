@@ -31,7 +31,9 @@ def compile_schema(metadata, s, **options):
             extra_validator=extra_validator,
             **options)
     elif not isinstance(s, type):
-        if hasattr(s, 'schema'):
+        if hasattr(s, 'make_schema'):
+            return s.make_schema(**options)
+        elif hasattr(s, 'schema'):
             return s.schema
         else:
             raise S.Invalid('Invalid schema {}'.format(s), s)

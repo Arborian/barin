@@ -130,3 +130,16 @@ class TestSubdoc(TestCase):
             self.assertEqual(
                 {'y.0': 5},
                 self.MyDoc.y[0] == 5)
+
+class TestSubdocNone(TestCase):
+
+        def setUp(self):
+            metadata = Metadata()
+            subdoc = subdocument(metadata, 'subdoc',
+                Field('x', int))
+            self.MyDoc = collection(
+                metadata, 'mydoc',
+                Field('y', subdoc, default=None))
+
+        def test_can_create(self):
+            self.doc = self.MyDoc.m.create()
