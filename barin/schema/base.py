@@ -110,3 +110,11 @@ class Anything(Validator):
 
     def __getitem__(self, name):
         return Anything()
+
+
+class Strip(Validator):
+
+    def validate(self, value, state=None):
+        return Missing
+
+

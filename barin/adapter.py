@@ -25,7 +25,6 @@ class StaticAdapter(object):
     def __call__(self, obj, state=None):
         vobj = self.schema.validate(obj, state)
         if not isinstance(vobj, self.cls):
-            import ipdb; ipdb.set_trace();
             vobj = self.cls(vobj)
         return vobj
 

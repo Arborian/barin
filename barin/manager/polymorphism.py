@@ -66,9 +66,19 @@ class Registration(object):
         return self.fields[name]
 
     def make_schema(self, **options):
+        '''This is called for subdocuments'''
+        options.setdefault('allow_extra', True)
+        options.setdefault('strip_extra', True)
         return self.fields.make_schema(
-            self.metadata, as_class=self.cls, **options)
+            self.metadata,
+            as_class=self.cls,
+            **options)
 
     @reify
     def schema(self):
-        return self.fields.make_schema(self.metadata, as_class=self.cls)
+        '''This is called documents'''
+        return self.fields.make_schema(
+            self.metadata,
+            as_class=self.cls,
+            allow_extra=True,
+            strip_extra=True)

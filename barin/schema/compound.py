@@ -1,8 +1,14 @@
 """Schemas for compound types (Documents and Arrays)."""
+import logging
+
 import six
 
+from barin import errors
 from barin.base import Document as BaseDocument
 from barin.schema.base import Validator, Invalid, Missing
+
+
+log = logging.getLogger(__name__)
 
 
 class Document(Validator):
@@ -15,6 +21,7 @@ class Document(Validator):
             self,
             fields=Missing,
             allow_extra=False,
+            strip_extra=False,
             extra_validator=Missing,
             as_class=BaseDocument,
             **kwargs):
@@ -24,9 +31,14 @@ class Document(Validator):
         if fields is Missing:
             fields = {}
         if extra_validator is not Missing:
+            if strip_extra:
+                raise errors.SchemaError(
+                    'strip_extra is incompatible with extra_validator'
+                    ' in schema {}'.format(self))
             allow_extra = True
         self.fields = dict(fields)
         self.allow_extra = allow_extra
+        self.strip_extra = strip_extra
         self.extra_validator = extra_validator
         self.as_class = as_class
 
@@ -63,6 +75,9 @@ class Document(Validator):
         # Validate unknown keys ('extra fields')
         for name, r_val in value.items():
             if name in self.fields:
+                continue
+            if self.strip_extra:
+                log.warn('Stripping extra value %r => %r', name, r_val)
                 continue
             if not self.allow_extra:
                 errors[name] = Invalid(self._msgs['extra'], r_val)

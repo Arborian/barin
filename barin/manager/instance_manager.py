@@ -74,9 +74,9 @@ class InstanceManager(object):
 
     def _sync_m2m(self, this_id, this_fld, this_val, other_cls, other_fld, isdel):
         "this is an array, other is an array"
-        q = (other_cls.m.query
-            .match(other_fld == this_id)
-            .match(other_cls._id.nin(this_val)))
+        q = other_cls.m.query.match(other_fld == this_id)
+        if not isdel:
+            q = q.match(other_cls._id.nin(this_val))
         q.update_many(other_fld.pull(this_id))
         if isdel:
             return
@@ -86,9 +86,9 @@ class InstanceManager(object):
 
     def _sync_o2m(self, this_id, this_fld, this_val, other_cls, other_fld, isdel):
         "this is an array, other is a scalar"
-        q = (other_cls.m.query
-            .match(other_fld == this_id)
-            .match(other_cls._id.nin(this_val)))
+        q = other_cls.m.query.match(other_fld == this_id)
+        if not isdel:
+            q = q.match(other_cls._id.nin(this_val))
         q.update_many(other_fld.set(None))
         if isdel:
             return
@@ -98,25 +98,23 @@ class InstanceManager(object):
 
     def _sync_m2o(self, this_id, this_fld, this_val, other_cls, other_fld, isdel):
         "this is a scalar, other is an array"
-        q = (other_cls.m.query
-            .match(other_fld == this_id)
-            .match(other_cls._id != this_val))
+        q = other_cls.m.query.match(other_fld == this_id)
+        if not isdel:
+            q = q.match(other_cls._id != this_val)
         q.update_many(other_fld.pull(this_id))
         if isdel:
             return
-        q = (other_cls.m.query
-            .match(other_cls._id == this_val))
+        q = other_cls.m.query.match(other_cls._id == this_val)
         q.update_one(other_fld.add_to_set(this_id))
 
     def _sync_o2o(self, this_id, this_fld, this_val, other_cls, other_fld, isdel):
         "this is a scalar, other is a scalar"
-        q = (other_cls.m.query
-            .match(other_fld == this_id)
-            .match(other_cls._id != this_val))
+        q = other_cls.m.query.match(other_fld == this_id)
+        if not isdel:
+            q = q.match(other_cls._id != this_val)
         q.update_many(other_fld.set(None))
         if isdel:
             return
-        q = (other_cls.m.query
-            .match(other_cls._id == this_val))
+        q = other_cls.m.query.match(other_cls._id == this_val)
         q.update_one(other_fld.set(this_id))
 

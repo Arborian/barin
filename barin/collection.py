@@ -52,7 +52,8 @@ def subdocument(metadata, name, *args, **options):
         if isinstance(arg, field.Field):
             fields.append(arg)
         elif isinstance(arg, index.Index):
-            raise errors.SchemaError('Indexes must only occur on base collections')
+            raise errors.SchemaError(
+                'Indexes must only occur on base collections')
         else:
             raise errors.SchemaError('Unknown argument type {}'.format(arg))
     fields = field.FieldCollection(fields)
