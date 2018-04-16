@@ -121,7 +121,7 @@ class Query(_CursorSource):
 class Aggregate(_CursorSource):
     OPS_MODIFYING_DOC_STRUCTURE = set([
         '$project', '$redact', '$unwind', '$group',
-        '$lookup', '$indexStats'])
+        '$lookup', '$indexStats', '$graphLookup'])
 
     def __init__(self, mgr, pipeline=None):
         self._mgr = mgr
@@ -151,6 +151,25 @@ class Aggregate(_CursorSource):
     lookup = partialmethod(_append, '$lookup')
     index_stats = partialmethod(_append, '$indexStats')
 
+    def graph_lookup(
+            self, startWith, connectFromField, connectToField, as_,
+            from_=None, maxDepth=None, depthField=None,
+            restrictSearchWithMatch=None):
+        if from_ is None:
+            from_ = self._mgr.collection.name
+        args = {
+            'from': from_, 'startWith': startWith, 'as': as_,
+            'connectFromField': connectFromField,
+            'connectToField': connectToField}
+        if maxDepth is not None:
+            args['maxDepth'] = maxDepth
+        if depthField is not None:
+            args['depthField'] = depthField
+        if restrictSearchWithMatch is not None:
+            args['restrictSearchWithMatch'] = restrictSearchWithMatch
+        stage = {'$graphLookup': args}
+        return Aggregate(self._mgr, self.pipeline + [stage])
+
     def sort(self, key_or_list, direction=1):
         if isinstance(key_or_list, six.string_types):
             sval = [(key_or_list, direction)]
@@ -169,7 +188,7 @@ class Aggregate(_CursorSource):
 
         # Wrap it in a barin cursor if the document structure is unmodified
         for stage in self.pipeline:
-            if stage.keys()[0] in self.OPS_MODIFYING_DOC_STRUCTURE:
+            if list(stage.keys())[0] in self.OPS_MODIFYING_DOC_STRUCTURE:
                 return pymongo_cursor
         return Cursor(self._mgr, pymongo_cursor)
 
