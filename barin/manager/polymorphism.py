@@ -1,3 +1,4 @@
+import re
 from barin.util import reify, NoDefault
 
 
@@ -51,7 +52,9 @@ class Registration(object):
         if discriminator is NoDefault:
             self.spec = {}
         else:
-            self.spec = {registry.polymorphic_discriminator: discriminator}
+            re_disc = re.compile(f'^{re.escape(discriminator)}')
+            self.spec = {
+                registry.polymorphic_discriminator: re_disc}
 
     def __repr__(self):
         return '<Reg {}>'.format(self.cls.__name__)
