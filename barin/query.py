@@ -1,6 +1,7 @@
 from itertools import chain
 
 import six
+from bson.son import SON
 
 from .base import partialmethod
 from .cursor import Cursor
@@ -121,7 +122,7 @@ class Query(_CursorSource):
 class Aggregate(_CursorSource):
     OPS_MODIFYING_DOC_STRUCTURE = set([
         '$project', '$redact', '$unwind', '$group',
-        '$lookup', '$indexStats', '$graphLookup'])
+        '$lookup', '$indexStats', '$graphLookup', '$count'])
 
     def __init__(self, mgr, pipeline=None):
         self._mgr = mgr
@@ -150,6 +151,7 @@ class Aggregate(_CursorSource):
     sample = partialmethod(_append, '$sample')
     lookup = partialmethod(_append, '$lookup')
     index_stats = partialmethod(_append, '$indexStats')
+    count = partialmethod(_append, '$count')
 
     def graph_lookup(
             self, startWith, connectFromField, connectToField, as_,
@@ -175,7 +177,7 @@ class Aggregate(_CursorSource):
             sval = [(key_or_list, direction)]
         else:
             sval = key_or_list
-        stage = {'$sort': sval}
+        stage = {'$sort': SON(sval)}
         return Aggregate(self._mgr, self.pipeline + [stage])
 
     def out(self, collection_name):
