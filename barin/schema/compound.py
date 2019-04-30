@@ -77,7 +77,7 @@ class Document(Validator):
             if name in self.fields:
                 continue
             if self.strip_extra:
-                log.warn('Stripping extra value %r => %r', name, r_val)
+                log.debug('Stripping extra value %r => %r', name, r_val)
                 continue
             if not self.allow_extra:
                 errors[name] = Invalid(self._msgs['extra'], r_val)

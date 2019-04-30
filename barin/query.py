@@ -206,9 +206,6 @@ class _AggCurrent(object):
 
 class _AggName(six.text_type):
 
-    def __init__(self, name):
-        super(_AggName, self).__init__(name)
-
     def __getitem__(self, name):
         return _AggName(six.text_type(self) + '.' + name)
 
