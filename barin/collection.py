@@ -41,7 +41,7 @@ def collection(metadata, cname, *args, **options):
         metadata, cname, indexes, **options)
     dct = dict(m=mgr, __barin__=mgr, **fields)
     cls = type(cname, (Collection,), dct)
-    mgr.registry.register(cls, fields)
+    mgr.registry.register(cls, fields, options)
     metadata.register(cls)
     return cls
 
@@ -61,7 +61,7 @@ def subdocument(metadata, name, *args, **options):
     mgr = manager.BaseManager(metadata, name, **options)
     dct = dict(m=mgr, __barin__=mgr, **fields)
     cls = type(name, (base.Document,), dct)
-    mgr.registry.register(cls, fields)
+    mgr.registry.register(cls, fields, options)
     metadata.register(cls)
     return cls
 
@@ -87,7 +87,7 @@ def derived(parent, discriminator, *args, **options):
     name = '{}[{}={}]'.format(
         mgr.name, mgr.registry.polymorphic_discriminator, discriminator)
     cls = type(name,  (parent,), dct)
-    mgr.registry.register(cls, fields, discriminator)
+    mgr.registry.register(cls, fields, options, discriminator)
     return cls
 
 

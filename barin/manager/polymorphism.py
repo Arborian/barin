@@ -11,8 +11,8 @@ class Registry(object):
         self._by_cls = {}
         self.default = None
 
-    def register(self, cls, fields, discriminator=NoDefault):
-        reg = Registration(self, cls, fields, discriminator)
+    def register(self, cls, fields, options, discriminator=NoDefault):
+        reg = Registration(self, cls, fields, options, discriminator)
         self._by_disc[discriminator] = self._by_cls[cls] = reg
         if discriminator is NoDefault:
             self.default = reg
@@ -44,10 +44,11 @@ class Registry(object):
 
 class Registration(object):
 
-    def __init__(self, registry, cls, fields, discriminator):
+    def __init__(self, registry, cls, fields, options, discriminator):
         self.registry = registry
         self.cls = cls
         self.fields = fields
+        self.options = options
         self.discriminator = discriminator
         if discriminator is NoDefault:
             self.spec = {}
@@ -68,10 +69,10 @@ class Registration(object):
     def __getitem__(self, name):
         return self.fields[name]
 
-    def make_schema(self, **options):
+    def make_schema(self, **extra_options):
         '''This is called for subdocuments'''
-        options.setdefault('allow_extra', True)
-        options.setdefault('strip_extra', True)
+        options = dict(self.options)
+        options.update(extra_options)
         return self.fields.make_schema(
             self.metadata,
             as_class=self.cls,
@@ -83,5 +84,4 @@ class Registration(object):
         return self.fields.make_schema(
             self.metadata,
             as_class=self.cls,
-            allow_extra=True,
-            strip_extra=True)
+            **self.options)

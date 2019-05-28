@@ -1,3 +1,4 @@
+import re
 from unittest import TestCase
 
 from mock import Mock
@@ -19,7 +20,15 @@ class TestDerived(TestCase):
 
         self.Derived = derived(
             self.Base, 'derived',
-            Field('x', int, default=10))
+            Field('x', int, default=10),
+        )
+
+        self.Derived2 = derived(
+            self.Base, 'derived2',
+            Field('x', int, default=10),
+            allow_extra=True,
+            strip_extra=False,
+        )
 
         self.metadata.bind(self.db)
         self.db.mydoc.with_options.return_value = self.db.mydoc
@@ -32,7 +41,7 @@ class TestDerived(TestCase):
     def test_query_derived(self):
         self.assertEqual(
             self.Derived.m.query._compile_query(),
-            {'filter': {'disc': 'derived'}})
+            {'filter': {'disc': re.compile('^derived')}})
 
     def test_poly_query(self):
         self.db.mydoc.find.return_value = iter([
@@ -41,4 +50,10 @@ class TestDerived(TestCase):
         res = self.Base.m.query.one()
         self.assertEqual(
             type(res), self.Derived)
+
+    def test_derived_with_extra(self):
+        self.assertEqual(self.Derived.m.schema.allow_extra, False)
+        self.assertEqual(self.Derived.m.schema.strip_extra, False)
+        self.assertEqual(self.Derived2.m.schema.allow_extra, True)
+        self.assertEqual(self.Derived2.m.schema.strip_extra, False)
 

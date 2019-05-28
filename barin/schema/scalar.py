@@ -1,5 +1,5 @@
 """Schemas for simple BSON types."""
-from datetime import datetime
+from datetime import datetime, date, time
 
 import six
 import pytz
@@ -88,6 +88,8 @@ class DateTime(Scalar):
     def _validate(self, value, state=None):
         """Convert to a default datetime on egress from the DB."""
         res = super(DateTime, self)._validate(value, state)
+        if isinstance(res, date):
+            res = datetime.combine(res, time.min)
         if not isinstance(res, datetime):
             raise Invalid(self._msgs['not_dt'], value)
         if res.tzinfo:
