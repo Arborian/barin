@@ -23,6 +23,17 @@ class ObjectId(Scalar):
         return value
 
 
+class DBRef(Scalar):
+    _msgs = dict(
+        Scalar._msgs,
+        not_dbref='Value must be an DBRef')
+
+    def _validate(self, value, state=None):
+        if not isinstance(value, bson.dbref.DBRef):
+            raise Invalid(self._msgs['not_dbref'], value)
+        return value
+
+
 class Number(Scalar):
     _msgs = dict(
         Scalar._msgs,

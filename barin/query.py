@@ -120,19 +120,23 @@ class Query(_CursorSource):
 
 
 class Aggregate(_CursorSource):
-    OPS_MODIFYING_DOC_STRUCTURE = set([
-        '$project', '$redact', '$unwind', '$group',
-        '$lookup', '$indexStats', '$graphLookup', '$count'])
 
-    def __init__(self, mgr, pipeline=None):
+    def __init__(self, mgr, pipeline=None, raw=False):
         self._mgr = mgr
         if pipeline is None:
             pipeline = []
         self.pipeline = pipeline
+        self.raw = raw
 
-    def _append(self, op, value):
+    def _append(self, op, value, raw=None):
+        if raw is None:
+            raw = self.raw
         stage = {op: value}
-        return Aggregate(self._mgr, self.pipeline + [stage])
+        return Aggregate(self._mgr, self.pipeline + [stage], raw)
+
+    @property
+    def m(self):
+        return self._mgr
 
     @property
     def current(self):
@@ -140,18 +144,18 @@ class Aggregate(_CursorSource):
 
     c = current
 
-    project = partialmethod(_append, '$project')
+    project = partialmethod(_append, '$project', raw=True)
     match = partialmethod(_append, '$match')
     limit = partialmethod(_append, '$limit')
     skip = partialmethod(_append, '$skip')
     geo_near = partialmethod(_append, '$geoNear')
-    redact = partialmethod(_append, '$redact')
-    unwind = partialmethod(_append, '$unwind')
-    group = partialmethod(_append, '$group')
+    redact = partialmethod(_append, '$redact', raw=True)
+    unwind = partialmethod(_append, '$unwind', raw=True)
+    group = partialmethod(_append, '$group', raw=True)
     sample = partialmethod(_append, '$sample')
-    lookup = partialmethod(_append, '$lookup')
-    index_stats = partialmethod(_append, '$indexStats')
-    count = partialmethod(_append, '$count')
+    lookup = partialmethod(_append, '$lookup', raw=True)
+    index_stats = partialmethod(_append, '$indexStats', raw=True)
+    count = partialmethod(_append, '$count', raw=True)
 
     def graph_lookup(
             self, startWith, connectFromField, connectToField, as_,
@@ -170,7 +174,7 @@ class Aggregate(_CursorSource):
         if restrictSearchWithMatch is not None:
             args['restrictSearchWithMatch'] = restrictSearchWithMatch
         stage = {'$graphLookup': args}
-        return Aggregate(self._mgr, self.pipeline + [stage])
+        return Aggregate(self._mgr, self.pipeline + [stage], True)
 
     def sort(self, key_or_list, direction=1):
         if isinstance(key_or_list, six.string_types):
@@ -178,21 +182,29 @@ class Aggregate(_CursorSource):
         else:
             sval = key_or_list
         stage = {'$sort': SON(sval)}
-        return Aggregate(self._mgr, self.pipeline + [stage])
+        return Aggregate(self._mgr, self.pipeline + [stage], self.raw)
 
     def out(self, collection_name):
         pipeline = self.pipeline + [{'$out': collection_name}]
         cursor = self._mgr.collection.aggregate(pipeline)
         return iter(Cursor(self._mgr, cursor))
 
+    def explain(self):
+        return self._mgr.database.command(
+            'aggregate',
+            self._mgr.collection.name,
+            pipeline=self.pipeline,
+            explain=True)
+
     def get_cursor(self):
         pymongo_cursor = self._mgr.collection.aggregate(self.pipeline)
+        if self.raw:
+            return pymongo_cursor
+        else:
+            return Cursor(self._mgr, pymongo_cursor)
 
-        # Wrap it in a barin cursor if the document structure is unmodified
-        for stage in self.pipeline:
-            if list(stage.keys())[0] in self.OPS_MODIFYING_DOC_STRUCTURE:
-                return pymongo_cursor
-        return Cursor(self._mgr, pymongo_cursor)
+    def conform(self, mgr):
+        return Aggregate(mgr, self.pipeline, raw=False)
 
 
 class _AggCurrent(object):
