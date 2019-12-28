@@ -1,3 +1,4 @@
+import re
 from collections import namedtuple
 
 from . import mql
@@ -136,6 +137,10 @@ class Field(object):
     def mod(self, divisor, remainder):
         return mql.Clause(
             {self._name: {'$mod': [divisor, remainder]}})
+
+    def startswith(self, prefix):
+        regex = re.compile('^' + re.escape(prefix))
+        return mql.Clause({self._name: regex})
 
     def regex(self, regex, options=None):
         spec = {'$regex': regex}

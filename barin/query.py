@@ -157,6 +157,21 @@ class Aggregate(_CursorSource):
     index_stats = partialmethod(_append, '$indexStats', raw=True)
     count = partialmethod(_append, '$count', raw=True)
 
+    def text(self, search, **kwargs):
+        '''$text must always be part of the initial $match pipeline stage'''
+        new_match = {'$text': {'$search': search, **kwargs}}
+        for i, stage in enumerate(self.pipeline):
+            if '$match' in stage:
+                return Aggregate(
+                    self._mgr,
+                    self.pipeline[:i]
+                    + [{'$match': dict(stage['$match'], **new_match)}]
+                    + self.pipeline[i+1:],
+                    self.raw,
+                )
+        else:
+            return self.match(new_match)
+
     def graph_lookup(
             self, startWith, connectFromField, connectToField, as_,
             from_=None, maxDepth=None, depthField=None,
