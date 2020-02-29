@@ -1,5 +1,3 @@
-from itertools import chain
-
 import six
 from bson.son import SON
 
@@ -9,7 +7,6 @@ from . import mql
 
 
 class _CursorSource(object):
-
     def get_cursor(self):
         raise NotImplementedError()
 
@@ -32,38 +29,37 @@ class _CursorSource(object):
             next(it)
         except StopIteration:
             return res
-        raise ValueError('More than one result returned for one()')
+        raise ValueError("More than one result returned for one()")
 
     def count(self):
         return self.get_cursor().count()
 
 
 class Query(_CursorSource):
-
     def __init__(self, mgr, pipeline=None):
         self._mgr = mgr
         if pipeline is None:
             pipeline = []
         self.pipeline = pipeline
-        self._wrap_mgr('find')
-        self._wrap_mgr('update_one')
-        self._wrap_mgr('update_many')
-        self._wrap_mgr('replace_one')
-        self._wrap_mgr('delete_one')
-        self._wrap_mgr('delete_many')
-        self._wrap_mgr('find_one_and_update')
-        self._wrap_mgr('find_one_and_replace')
-        self._wrap_mgr('find_one_and_delete')
+        self._wrap_mgr("find")
+        self._wrap_mgr("update_one")
+        self._wrap_mgr("update_many")
+        self._wrap_mgr("replace_one")
+        self._wrap_mgr("delete_one")
+        self._wrap_mgr("delete_many")
+        self._wrap_mgr("find_one_and_update")
+        self._wrap_mgr("find_one_and_replace")
+        self._wrap_mgr("find_one_and_delete")
 
     def _append(self, op, value):
         stage = {op: value}
         return Query(self._mgr, self.pipeline + [stage])
 
-    match = partialmethod(_append, '$match')
-    limit = partialmethod(_append, '$limit')
-    skip = partialmethod(_append, '$skip')
-    sort = partialmethod(_append, '$sort')
-    geo_near = partialmethod(_append, '$geoNear')
+    match = partialmethod(_append, "$match")
+    limit = partialmethod(_append, "$limit")
+    skip = partialmethod(_append, "$skip")
+    sort = partialmethod(_append, "$sort")
+    geo_near = partialmethod(_append, "$geoNear")
 
     def get_cursor(self):
         return self._mgr.find(**self._compile_query())
@@ -73,23 +69,24 @@ class Query(_CursorSource):
             sval = (key_or_list, direction)
         else:
             sval = key_or_list
-        stage = {'$sort': sval}
+        stage = {"$sort": sval}
         return Query(self._mgr, self.pipeline + [stage])
 
     def _wrap_mgr(self, name):
         def wrapper(*args, **kwargs):
             orig = getattr(self._mgr, name)
             qres = self._compile_query()
-            if 'sort' in qres:
-                res = orig(qres['filter'], sort=qres['sort'], *args, **kwargs)
+            if "sort" in qres:
+                res = orig(qres["filter"], sort=qres["sort"], *args, **kwargs)
             else:
-                res = orig(qres['filter'], *args, **kwargs)
-            if 'limit' in qres:
-                res = res.limit(qres['limit'])
-            if 'skip' in qres:
-                res = res.skip(qres['skip'])
+                res = orig(qres["filter"], *args, **kwargs)
+            if "limit" in qres:
+                res = res.limit(qres["limit"])
+            if "skip" in qres:
+                res = res.skip(qres["skip"])
             return res
-        wrapper.__name__ = 'wrapped_{}'.format(name)
+
+        wrapper.__name__ = "wrapped_{}".format(name)
         setattr(self, name, wrapper)
         return wrapper
 
@@ -100,27 +97,25 @@ class Query(_CursorSource):
         sorts = []
         for stage in self.pipeline:
             op, value = list(stage.items())[0]
-            if op == '$match':
+            if op == "$match":
                 filters.append(value)
-            elif op == '$limit':
+            elif op == "$limit":
                 limits.append(value)
-            elif op == '$skip':
+            elif op == "$skip":
                 skips.append(value)
-            elif op == '$sort':
+            elif op == "$sort":
                 sorts.append(value)
-        result = dict(
-            filter=mql.and_(*filters))
+        result = dict(filter=mql.and_(*filters))
         if limits:
-            result['limit'] = min(limits)
+            result["limit"] = min(limits)
         if skips:
-            result['skip'] = sum(skips)
+            result["skip"] = sum(skips)
         if sorts:
-            result['sort'] = list(sorts)
+            result["sort"] = list(sorts)
         return result
 
 
 class Aggregate(_CursorSource):
-
     def __init__(self, mgr, pipeline=None, raw=False):
         self._mgr = mgr
         if pipeline is None:
@@ -144,51 +139,61 @@ class Aggregate(_CursorSource):
 
     c = current
 
-    project = partialmethod(_append, '$project', raw=True)
-    match = partialmethod(_append, '$match')
-    limit = partialmethod(_append, '$limit')
-    skip = partialmethod(_append, '$skip')
-    geo_near = partialmethod(_append, '$geoNear')
-    redact = partialmethod(_append, '$redact', raw=True)
-    unwind = partialmethod(_append, '$unwind', raw=True)
-    group = partialmethod(_append, '$group', raw=True)
-    sample = partialmethod(_append, '$sample')
-    lookup = partialmethod(_append, '$lookup', raw=True)
-    index_stats = partialmethod(_append, '$indexStats', raw=True)
-    count = partialmethod(_append, '$count', raw=True)
+    project = partialmethod(_append, "$project", raw=True)
+    match = partialmethod(_append, "$match")
+    limit = partialmethod(_append, "$limit")
+    skip = partialmethod(_append, "$skip")
+    geo_near = partialmethod(_append, "$geoNear")
+    redact = partialmethod(_append, "$redact", raw=True)
+    unwind = partialmethod(_append, "$unwind", raw=True)
+    group = partialmethod(_append, "$group", raw=True)
+    sample = partialmethod(_append, "$sample")
+    lookup = partialmethod(_append, "$lookup", raw=True)
+    index_stats = partialmethod(_append, "$indexStats", raw=True)
+    count = partialmethod(_append, "$count", raw=True)
 
     def text(self, search, **kwargs):
-        '''$text must always be part of the initial $match pipeline stage'''
-        new_match = {'$text': {'$search': search, **kwargs}}
+        """$text must always be part of the initial $match pipeline stage"""
+        new_match = {"$text": {"$search": search, **kwargs}}
         for i, stage in enumerate(self.pipeline):
-            if '$match' in stage:
+            if "$match" in stage:
                 return Aggregate(
                     self._mgr,
                     self.pipeline[:i]
-                    + [{'$match': dict(stage['$match'], **new_match)}]
-                    + self.pipeline[i+1:],
+                    + [{"$match": dict(stage["$match"], **new_match)}]
+                    + self.pipeline[i + 1 :],
                     self.raw,
                 )
         else:
             return self.match(new_match)
 
     def graph_lookup(
-            self, startWith, connectFromField, connectToField, as_,
-            from_=None, maxDepth=None, depthField=None,
-            restrictSearchWithMatch=None):
+        self,
+        startWith,
+        connectFromField,
+        connectToField,
+        as_,
+        from_=None,
+        maxDepth=None,
+        depthField=None,
+        restrictSearchWithMatch=None,
+    ):
         if from_ is None:
             from_ = self._mgr.collection.name
         args = {
-            'from': from_, 'startWith': startWith, 'as': as_,
-            'connectFromField': connectFromField,
-            'connectToField': connectToField}
+            "from": from_,
+            "startWith": startWith,
+            "as": as_,
+            "connectFromField": connectFromField,
+            "connectToField": connectToField,
+        }
         if maxDepth is not None:
-            args['maxDepth'] = maxDepth
+            args["maxDepth"] = maxDepth
         if depthField is not None:
-            args['depthField'] = depthField
+            args["depthField"] = depthField
         if restrictSearchWithMatch is not None:
-            args['restrictSearchWithMatch'] = restrictSearchWithMatch
-        stage = {'$graphLookup': args}
+            args["restrictSearchWithMatch"] = restrictSearchWithMatch
+        stage = {"$graphLookup": args}
         return Aggregate(self._mgr, self.pipeline + [stage], True)
 
     def sort(self, key_or_list, direction=1):
@@ -196,20 +201,21 @@ class Aggregate(_CursorSource):
             sval = [(key_or_list, direction)]
         else:
             sval = key_or_list
-        stage = {'$sort': SON(sval)}
+        stage = {"$sort": SON(sval)}
         return Aggregate(self._mgr, self.pipeline + [stage], self.raw)
 
     def out(self, collection_name):
-        pipeline = self.pipeline + [{'$out': collection_name}]
+        pipeline = self.pipeline + [{"$out": collection_name}]
         cursor = self._mgr.collection.aggregate(pipeline)
         return iter(Cursor(self._mgr, cursor))
 
     def explain(self):
         return self._mgr.database.command(
-            'aggregate',
+            "aggregate",
             self._mgr.collection.name,
             pipeline=self.pipeline,
-            explain=True)
+            explain=True,
+        )
 
     def get_cursor(self):
         pymongo_cursor = self._mgr.collection.aggregate(self.pipeline)
@@ -223,18 +229,16 @@ class Aggregate(_CursorSource):
 
 
 class _AggCurrent(object):
-
     def __getitem__(self, name):
-        return _AggName('$' + name)
+        return _AggName("$" + name)
 
     def __getattr__(self, name):
         return self[name]
 
 
 class _AggName(six.text_type):
-
     def __getitem__(self, name):
-        return _AggName(six.text_type(self) + '.' + name)
+        return _AggName(six.text_type(self) + "." + name)
 
     def __getattr__(self, name):
         return self[name]
@@ -248,39 +252,38 @@ class _AggName(six.text_type):
     def _rbinop(self, op, other):
         return _AggOp(op, other, self)
 
-    __abs__ = partialmethod(_unop, '$abs')
-    __add__ = partialmethod(_binop, '$add')
-    __sub__ = partialmethod(_binop, '$subtract')
-    __mul__ = partialmethod(_binop, '$multiply')
-    __div__ = partialmethod(_binop, '$divide')
-    __mod__ = partialmethod(_binop, '$mod')
-    __pow__ = partialmethod(_binop, '$pow')
-    __radd__ = partialmethod(_rbinop, '$add')
-    __rsub__ = partialmethod(_rbinop, '$subtract')
-    __rmul__ = partialmethod(_rbinop, '$multiply')
-    __rdiv__ = partialmethod(_rbinop, '$divide')
-    __rmod__ = partialmethod(_rbinop, '$mod')
-    __rpow__ = partialmethod(_rbinop, '$pow')
+    __abs__ = partialmethod(_unop, "$abs")
+    __add__ = partialmethod(_binop, "$add")
+    __sub__ = partialmethod(_binop, "$subtract")
+    __mul__ = partialmethod(_binop, "$multiply")
+    __div__ = partialmethod(_binop, "$divide")
+    __mod__ = partialmethod(_binop, "$mod")
+    __pow__ = partialmethod(_binop, "$pow")
+    __radd__ = partialmethod(_rbinop, "$add")
+    __rsub__ = partialmethod(_rbinop, "$subtract")
+    __rmul__ = partialmethod(_rbinop, "$multiply")
+    __rdiv__ = partialmethod(_rbinop, "$divide")
+    __rmod__ = partialmethod(_rbinop, "$mod")
+    __rpow__ = partialmethod(_rbinop, "$pow")
 
-    ceil = partialmethod(_unop, '$ceil')
-    exp = partialmethod(_unop, '$exp')
-    floor = partialmethod(_unop, '$floor')
-    ln = partialmethod(_unop, '$ln')
-    log = partialmethod(_binop, '$ln')
-    log10 = partialmethod(_unop, '$log10')
-    sqrt = partialmethod(_unop, '$sqrt')
-    trunc = partialmethod(_unop, '$trunc')
+    ceil = partialmethod(_unop, "$ceil")
+    exp = partialmethod(_unop, "$exp")
+    floor = partialmethod(_unop, "$floor")
+    ln = partialmethod(_unop, "$ln")
+    log = partialmethod(_binop, "$ln")
+    log10 = partialmethod(_unop, "$log10")
+    sqrt = partialmethod(_unop, "$sqrt")
+    trunc = partialmethod(_unop, "$trunc")
 
-    concat = partialmethod(_binop, '$concat')
-    lower = partialmethod(_unop, '$toLower')
-    upper = partialmethod(_unop, '$toUpper')
-    strcasecmp = partialmethod(_binop, '$strcasecmp')
+    concat = partialmethod(_binop, "$concat")
+    lower = partialmethod(_unop, "$toLower")
+    upper = partialmethod(_unop, "$toUpper")
+    strcasecmp = partialmethod(_binop, "$strcasecmp")
 
     def substr(self, start, length):
-        return _AggOp('$substr', self, start, length)
+        return _AggOp("$substr", self, start, length)
 
 
 class _AggOp(dict):
-
     def __init__(self, op, *args):
         super(_AggOp, self).__init__({op: list(args)})
