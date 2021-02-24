@@ -1,4 +1,5 @@
 """Schemas for simple BSON types."""
+import uuid
 from datetime import datetime, date, time
 
 import six
@@ -101,7 +102,7 @@ class UUID(Scalar):
     _msgs = dict(Scalar._msgs, not_uuid="Value is not a valid UUID")
 
     def _validate(self, value, state=None):
-        res = super(DateTime, self)._validate(value, state)
-        if not isinstance(res, UUID):
+        res = super()._validate(value, state)
+        if not isinstance(res, uuid.UUID):
             raise Invalid(self._msgs["not_uuid"], value)
         return res
