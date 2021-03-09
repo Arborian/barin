@@ -6,14 +6,15 @@
 Contents
 =========
 .. toctree::
-
+   :maxdepth: 2
+   
    GettingStarted.rst
    UserGuide.rst
    EnsuringIndexing.rst
    PolymorphicEntities.rst
    CustomSchemas.rst
    ApiRef.rst
-   README.rst
+   
 
 
 
