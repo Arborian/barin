@@ -3,7 +3,6 @@ from .collection import Collection, CollectionRef
 
 
 class Metadata(object):
-
     def __init__(self, db=None):
         self.collections = []
         self._classes_full = {}
@@ -21,15 +20,20 @@ class Metadata(object):
         elif len(classes) > 1:
             options = map(repr, classes)
             raise ValueError(
-                'Ambiguous classname, could be any of: [%s]',
-                ', '.join(options))
+                "Ambiguous classname, could be any of: [%s]",
+                ", ".join(options),
+            )
         else:
             raise KeyError(index)
 
     def register(self, cls):
         if issubclass(cls, Collection):
             self.collections.append(cls)
-        k = cls.__module__ + '.' + cls.__name__
+        k = cls.__module__ + "." + cls.__name__
+        if k in self._classes_full:
+            raise ValueError(
+                f"Already registered {k}: {self._classes_full[k]}"
+            )
         self._classes_full[k] = cls
         self._classes_short[cls.__name__].append(cls)
 

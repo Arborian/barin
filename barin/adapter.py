@@ -1,4 +1,5 @@
 from barin.util import reify
+from barin.event import notify_object
 
 
 def adapter(manager):
@@ -9,7 +10,7 @@ def adapter(manager):
 
 
 class StaticAdapter(object):
-    '''Validate and adapt instances of a (non-polymorphic) managed class'''
+    """Validate and adapt instances of a (non-polymorphic) managed class"""
 
     def __init__(self, manager):
         self._manager = manager
@@ -26,11 +27,12 @@ class StaticAdapter(object):
         vobj = self.schema.validate(obj, state)
         if not isinstance(vobj, self.cls):
             vobj = self.cls(vobj)
+        notify_object(vobj)
         return vobj
 
 
 class PolymorphicAdapter(object):
-    '''Validate and adapt instances of a polymorphic managed class'''
+    """Validate and adapt instances of a polymorphic managed class"""
 
     def __init__(self, manager):
         self._manager = manager
@@ -46,4 +48,5 @@ class PolymorphicAdapter(object):
     def __call__(self, obj, state=None):
         reg = self.registry.by_value(obj)
         vobj = reg.schema.validate(obj, state)
+        notify_object(vobj)
         return vobj
