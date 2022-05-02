@@ -1,9 +1,9 @@
 import re
+from barin import errors
 from barin.util import reify, NoDefault
 
 
 class Registry(object):
-
     def __init__(self, manager, polymorphic_discriminator):
         self.manager = manager
         self.polymorphic_discriminator = polymorphic_discriminator
@@ -13,6 +13,13 @@ class Registry(object):
 
     def register(self, cls, fields, options, discriminator=NoDefault):
         reg = Registration(self, cls, fields, options, discriminator)
+        conflict = self._by_disc.get(discriminator)
+        if conflict:
+            raise errors.ConflictError(
+                "disc. {discriminator} already used for {conflict}".format(
+                    discriminator=discriminator, conflict=conflict
+                )
+            )
         self._by_disc[discriminator] = self._by_cls[cls] = reg
         if discriminator is NoDefault:
             self.default = reg
@@ -43,7 +50,6 @@ class Registry(object):
 
 
 class Registration(object):
-
     def __init__(self, registry, cls, fields, options, discriminator):
         self.registry = registry
         self.cls = cls
@@ -53,12 +59,11 @@ class Registration(object):
         if discriminator is NoDefault:
             self.spec = {}
         else:
-            re_disc = re.compile(f'^{re.escape(discriminator)}')
-            self.spec = {
-                registry.polymorphic_discriminator: re_disc}
+            re_disc = re.compile(f"^{re.escape(discriminator)}")
+            self.spec = {registry.polymorphic_discriminator: re_disc}
 
     def __repr__(self):
-        return '<Reg {}>'.format(self.cls.__name__)
+        return "<Reg {}>".format(self.cls.__name__)
 
     def __getattr__(self, name):
         return getattr(self.registry, name)
@@ -70,18 +75,16 @@ class Registration(object):
         return self.fields[name]
 
     def make_schema(self, **extra_options):
-        '''This is called for subdocuments'''
+        """This is called for subdocuments"""
         options = dict(self.options)
         options.update(extra_options)
         return self.fields.make_schema(
-            self.metadata,
-            as_class=self.cls,
-            **options)
+            self.metadata, as_class=self.cls, **options
+        )
 
     @reify
     def schema(self):
-        '''This is called documents'''
+        """This is called documents"""
         return self.fields.make_schema(
-            self.metadata,
-            as_class=self.cls,
-            **self.options)
+            self.metadata, as_class=self.cls, **self.options
+        )
