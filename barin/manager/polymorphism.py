@@ -59,7 +59,7 @@ class Registration(object):
         if discriminator is NoDefault:
             self.spec = {}
         else:
-            re_disc = re.compile(f"^{re.escape(discriminator)}")
+            re_disc = {"$regex": f"^{re.escape(discriminator)}"}
             self.spec = {registry.polymorphic_discriminator: re_disc}
 
     def __repr__(self):

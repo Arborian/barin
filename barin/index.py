@@ -2,7 +2,6 @@ import six
 
 
 class Index(object):
-
     def __init__(self, arg, **options):
         if isinstance(arg, six.string_types):
             arg = [(arg, 1)]
@@ -13,6 +12,9 @@ class Index(object):
             else:
                 self.arg.append(a)
         self.options = options
+
+    def __repr__(self):
+        return "<Index {}, {}>".format(self.arg, self.options)
 
     def create(self, collection):
         return collection.create_index(self.arg, **self.options)
