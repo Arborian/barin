@@ -1,5 +1,6 @@
 """Schemas for simple BSON types."""
 import uuid
+import logging
 from datetime import datetime, date, time
 
 import six
@@ -7,6 +8,8 @@ import pytz
 import bson
 
 from .base import Validator, Invalid
+
+log = logging.getLogger(__name__)
 
 
 class Scalar(Validator):
@@ -103,6 +106,13 @@ class UUID(Scalar):
 
     def _validate(self, value, state=None):
         res = super()._validate(value, state)
+        # Handle legacy non-uuid storage maybe?
+        if isinstance(res, bson.Binary):
+            try:
+                res = uuid.UUID(bytes=res)
+            except Exception as err:
+                log.exception(f"Error converting bson.Binary to UUID: {err}")
+                raise Invalid(self._msgs["not_uuid"], value)
         if not isinstance(res, uuid.UUID):
             raise Invalid(self._msgs["not_uuid"], value)
         return res
