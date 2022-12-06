@@ -32,7 +32,10 @@ class _CursorSource(object):
         raise ValueError("More than one result returned for one()")
 
     def count(self):
-        return self.get_cursor().count()
+        return self.get_cursor().count_documents()
+
+    def count_documents(self):
+        return self.get_cursor().count_documents()
 
 
 class Query(_CursorSource):
