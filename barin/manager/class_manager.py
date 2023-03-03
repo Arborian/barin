@@ -20,7 +20,11 @@ class ClassManager(object):
         return getattr(self._reg, name)
 
     def __dir__(self):
-        return dir(self._reg) + list(self.__dict__.keys())
+        return (
+            dir(self._reg)
+            + list(self.__dict__.keys())
+            + list(self.__class__.__dict__.keys())
+        )
 
     def __getitem__(self, name):
         return self._reg[name]
