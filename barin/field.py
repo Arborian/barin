@@ -61,7 +61,10 @@ class Field(object):
         inst[self._name] = self._schema.validate(value)
 
     def __getattr__(self, name):
-        return self[name]
+        try:
+            return self[name]
+        except TypeError:
+            raise AttributeError(name)
 
     def __getitem__(self, name):
         from barin import manager
