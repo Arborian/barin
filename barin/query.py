@@ -62,7 +62,6 @@ class Query(_CursorSource):
     match = partialmethod(_append, "$match")
     limit = partialmethod(_append, "$limit")
     skip = partialmethod(_append, "$skip")
-    sort = partialmethod(_append, "$sort")
     geo_near = partialmethod(_append, "$geoNear")
 
     def get_cursor(self):
@@ -230,6 +229,15 @@ class Aggregate(_CursorSource):
 
     def conform(self, mgr):
         return Aggregate(mgr, self.pipeline, raw=False)
+
+    def lookup_to_one(self, lookup_spec):
+        self = self.lookup(lookup_spec)
+        return self.unwind(
+            {
+                "path": "$" + lookup_spec["as"],
+                "preserveNullAndEmptyArrays": True,
+            }
+        )
 
 
 class _AggCurrent(object):
