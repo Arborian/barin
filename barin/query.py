@@ -143,6 +143,7 @@ class Aggregate(_CursorSource):
     c = current
 
     project = partialmethod(_append, "$project", raw=True)
+    add_fields = partialmethod(_append, "$addFields", raw=True)
     match = partialmethod(_append, "$match")
     limit = partialmethod(_append, "$limit")
     skip = partialmethod(_append, "$skip")
@@ -238,6 +239,11 @@ class Aggregate(_CursorSource):
                 "preserveNullAndEmptyArrays": True,
             }
         )
+
+    def join(self, name, *args, **kwargs):
+        cls = self._mgr.cls
+        attr = getattr(cls, name)
+        return attr.join(self, *args, **kwargs)
 
 
 class _AggCurrent(object):
