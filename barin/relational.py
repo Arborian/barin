@@ -27,6 +27,7 @@ class joined_property:
         return self
 
     def __get__(self, obj, cls=None):
+        breakpoint()
         if obj is None:
             return self
         value = obj.get(self._name, self.MISSING)
@@ -76,7 +77,7 @@ class relationship(joined_property):
     def simple_load(self, obj, cref):
         local_field = self._lookup_spec["localField"]
         foreign_field = self._lookup_spec["foreignField"]
-        local_value = getattr(obj, local_field)
+        local_value = dotted_getattr(obj, local_field)
         q = cref.m.query.match({foreign_field: local_value})
         if self._many:
             return q
@@ -105,3 +106,9 @@ class relationship(joined_property):
                 {self._name: {"$ifNull": ["$" + self._name, None]}}
             )
         return agg
+
+
+def dotted_getattr(obj, path):
+    for attr in path.split("."):
+        obj = getattr(obj, attr)
+    return obj
