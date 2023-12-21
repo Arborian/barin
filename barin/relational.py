@@ -27,7 +27,6 @@ class joined_property:
         return self
 
     def __get__(self, obj, cls=None):
-        breakpoint()
         if obj is None:
             return self
         value = obj.get(self._name, self.MISSING)
