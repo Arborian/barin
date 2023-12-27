@@ -37,7 +37,7 @@ class joined_property:
             return None
         adapt = adapter(cref.m)
         if self._many:
-            return map(adapt, value)
+            return list(map(adapt, value))
         else:
             return adapt(value)
 
