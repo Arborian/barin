@@ -24,9 +24,8 @@ class StaticAdapter(object):
         return self._manager.schema
 
     def __call__(self, obj, state=None):
-        vobj = self.schema.validate(obj, state)
-        if not isinstance(vobj, self.cls):
-            vobj = self.cls(vobj)
+        reg = self._manager.registry.by_class(self.cls)
+        vobj = reg.schema.validate(obj, state)
         notify_object(vobj)
         return vobj
 
