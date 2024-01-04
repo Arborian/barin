@@ -240,8 +240,12 @@ class Aggregate(_CursorSource):
             }
         )
 
+    def real_class(self):
+        """Handles barin.cmap(...) classes"""
+        return self._mgr.registry.by_class(self._mgr.cls).cls
+
     def join(self, name, *args, **kwargs):
-        cls = self._mgr.cls
+        cls = self.real_class()
         attr = getattr(cls, name)
         return attr.join(self, *args, **kwargs)
 

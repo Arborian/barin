@@ -1,3 +1,4 @@
+from barin import query
 from barin.adapter import adapter
 
 
@@ -35,6 +36,8 @@ class joined_property:
             value = self._fget(obj, cref)
         if value is None:
             return None
+        if isinstance(value, query.Aggregate):
+            return value
         adapt = adapter(cref.m)
         if self._many:
             return list(map(adapt, value))
@@ -77,7 +80,7 @@ class relationship(joined_property):
         local_field = self._lookup_spec["localField"]
         foreign_field = self._lookup_spec["foreignField"]
         local_value = dotted_getattr(obj, local_field)
-        q = cref.m.query.match({foreign_field: local_value})
+        q = cref.m.aggregate.match({foreign_field: local_value})
         if self._many:
             return q
         else:
