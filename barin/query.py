@@ -119,18 +119,38 @@ class Query(_CursorSource):
 
 
 class Aggregate(_CursorSource):
-    def __init__(self, mgr, pipeline=None, raw=False):
+    def __init__(
+        self, mgr, pipeline=None, raw=False, hint=None, collection=None
+    ):
         self._mgr = mgr
         if pipeline is None:
             pipeline = []
         self.pipeline = pipeline
         self.raw = raw
+        self._hint = hint
+        if collection is None:
+            collection = self._mgr.collection
+        self.collection = collection
+
+    def clone(self, **overrides):
+        kwargs = dict(
+            mgr=self._mgr,
+            pipeline=self.pipeline,
+            raw=self.raw,
+            hint=self._hint,
+            collection=self.collection,
+        )
+        kwargs.update(overrides)
+        return Aggregate(**kwargs)
 
     def _append(self, op, value, raw=None):
         if raw is None:
             raw = self.raw
         stage = {op: value}
-        return Aggregate(self._mgr, self.pipeline + [stage], raw)
+        return self.clone(pipeline=self.pipeline + [stage], raw=raw)
+
+    def hint(self, index_name):
+        return self.clone(hint=index_name)
 
     @property
     def m(self):
@@ -155,18 +175,17 @@ class Aggregate(_CursorSource):
     lookup = partialmethod(_append, "$lookup", raw=True)
     index_stats = partialmethod(_append, "$indexStats", raw=True)
     count = partialmethod(_append, "$count", raw=True)
+    replace_root = partialmethod(_append, "$replaceRoot", raw=True)
 
     def text(self, search, **kwargs):
         """$text must always be part of the initial $match pipeline stage"""
         new_match = {"$text": {"$search": search, **kwargs}}
         for i, stage in enumerate(self.pipeline):
             if "$match" in stage:
-                return Aggregate(
-                    self._mgr,
-                    self.pipeline[:i]
+                return self.clone(
+                    pipeline=self.pipeline[:i]
                     + [{"$match": dict(stage["$match"], **new_match)}]
                     + self.pipeline[i + 1 :],
-                    self.raw,
                 )
         else:
             return self.match(new_match)
@@ -183,7 +202,7 @@ class Aggregate(_CursorSource):
         restrictSearchWithMatch=None,
     ):
         if from_ is None:
-            from_ = self._mgr.collection.name
+            from_ = self.collection.name
         args = {
             "from": from_,
             "startWith": startWith,
@@ -198,7 +217,7 @@ class Aggregate(_CursorSource):
         if restrictSearchWithMatch is not None:
             args["restrictSearchWithMatch"] = restrictSearchWithMatch
         stage = {"$graphLookup": args}
-        return Aggregate(self._mgr, self.pipeline + [stage], True)
+        return self.clone(pipeline=self.pipeline + [stage], raw=True)
 
     def sort(self, key_or_list, direction=1):
         if isinstance(key_or_list, six.string_types):
@@ -206,30 +225,41 @@ class Aggregate(_CursorSource):
         else:
             sval = key_or_list
         stage = {"$sort": SON(sval)}
-        return Aggregate(self._mgr, self.pipeline + [stage], self.raw)
+        return self.clone(pipeline=self.pipeline + [stage])
 
     def out(self, collection_name):
         pipeline = self.pipeline + [{"$out": collection_name}]
-        cursor = self._mgr.collection.aggregate(pipeline)
+        if self._hint:
+            cursor = self.collection.aggregate(pipeline, hint=self._hint)
+        else:
+            cursor = self.collection.aggregate(pipeline)
         return iter(Cursor(self._mgr, cursor))
 
     def explain(self):
-        return self._mgr.database.command(
-            "aggregate",
-            self._mgr.collection.name,
+        kwargs = dict(
             pipeline=self.pipeline,
             explain=True,
         )
+        if self._hint:
+            kwargs["hint"] = self._hint
+        return self._mgr.database.command(
+            "aggregate", self.collection.name, **kwargs
+        )
 
     def get_cursor(self):
-        pymongo_cursor = self._mgr.collection.aggregate(self.pipeline)
+        if self._hint:
+            pymongo_cursor = self.collection.aggregate(
+                self.pipeline, hint=self._hint
+            )
+        else:
+            pymongo_cursor = self.collection.aggregate(self.pipeline)
         if self.raw:
             return pymongo_cursor
         else:
             return Cursor(self._mgr, pymongo_cursor)
 
     def conform(self, mgr):
-        return Aggregate(mgr, self.pipeline, raw=False)
+        return self.clone(mgr=mgr, raw=False)
 
     def lookup_to_one(self, lookup_spec):
         self = self.lookup(lookup_spec)
