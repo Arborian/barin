@@ -64,6 +64,10 @@ class Query(_CursorSource):
     skip = partialmethod(_append, "$skip")
     geo_near = partialmethod(_append, "$geoNear")
 
+    def real_class(self):
+        """Handles barin.cmap(...) classes"""
+        return self._mgr.registry.by_class(self._mgr.cls).cls
+
     def get_cursor(self):
         return self._mgr.find(**self._compile_query())
 
@@ -185,7 +189,7 @@ class Aggregate(_CursorSource):
                 return self.clone(
                     pipeline=self.pipeline[:i]
                     + [{"$match": dict(stage["$match"], **new_match)}]
-                    + self.pipeline[i + 1 :],
+                    + self.pipeline[i + 1 :],  # noqa: E203
                 )
         else:
             return self.match(new_match)
