@@ -3,7 +3,7 @@ from barin.event import notify_object
 
 
 def adapter(manager):
-    if manager.polymorphic_discriminator:
+    if getattr(manager, "polymorphic_discriminator", None):
         return PolymorphicAdapter(manager)
     else:
         return StaticAdapter(manager)
